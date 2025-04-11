@@ -1,51 +1,76 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Define route permissions mapping
+const ROUTE_PERMISSIONS: Record<string, string> = {
+  '/dashboard': 'dashboard',
+  '/lead': 'leads',
+  '/users': 'settings',
+  '/settings': 'settings',
+  '/inventory': 'inventory',
+  '/calendar': 'calendar',
+  '/favorites': 'favorites',
+  '/mls': 'mls',
+  '/inbox': 'email'
+}
+
+// Check if user has permission for a specific module
+const hasPermission = (user: any, module: string): boolean => {
+  // If user is admin, always grant permission
+  if (user?.role === 'Administrator' || user?.role === 'admin') {
+    return true
+  }
+  
+  // If permissions object doesn't exist, default to false
+  if (!user?.permissions) {
+    return false
+  }
+  
+  // Check the specific module permission
+  return user.permissions[module] === true
+}
+
 export function middleware(request: NextRequest) {
   const userCookie = request.cookies.get('user')
   const isAuthPage = request.nextUrl.pathname === '/login'
-  const isUserPath = request.nextUrl.pathname.startsWith('/user/')
-  const isAdminPath = request.nextUrl.pathname.startsWith('/dashboard') || 
-                     request.nextUrl.pathname.startsWith('/users') ||
-                     request.nextUrl.pathname.startsWith('/settings') ||
-                     request.nextUrl.pathname.startsWith('/lead') ||
-                     request.nextUrl.pathname.startsWith('/calendar') ||
-                     request.nextUrl.pathname.startsWith('/inventory')
+  const path = request.nextUrl.pathname
 
   // Debug logs
-  console.log('Current path:', request.nextUrl.pathname)
-  console.log('User cookie:', userCookie)
-  console.log('Is auth page:', isAuthPage)
-  console.log('Is user path:', isUserPath)
-  console.log('Is admin path:', isAdminPath)
+  console.log('Current path:', path)
 
+  // If user is not logged in and trying to access a protected route, redirect to login
   if (!userCookie && !isAuthPage) {
-    console.log('Redirecting to login')
+    console.log('Redirecting to login: No user cookie')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (userCookie) {
-    const user = JSON.parse(userCookie.value)
-    const isAdmin = user.role === "Administrator"
+    let user
+    try {
+      user = JSON.parse(userCookie.value)
+    } catch (e) {
+      // Invalid user cookie, redirect to login
+      console.log('Redirecting to login: Invalid user cookie')
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
 
+    // If user is already logged in and trying to access login page, redirect to dashboard
     if (isAuthPage) {
-      // Redirect logged-in users away from login page
-      console.log('Redirecting from login to appropriate dashboard')
-      return NextResponse.redirect(
-        new URL(isAdmin ? '/dashboard' : '/user/dashboard', request.url)
-      )
-    }
-
-    // Prevent non-admins from accessing admin paths
-    if (!isAdmin && isAdminPath) {
-      console.log('Non-admin attempting to access admin path')
-      return NextResponse.redirect(new URL('/user/dashboard', request.url))
-    }
-
-    // Prevent admins from accessing user paths
-    if (isAdmin && isUserPath) {
-      console.log('Admin attempting to access user path')
+      console.log('Redirecting from login to dashboard')
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Check permission for specific route
+    if (path !== '/access-denied') {
+      // Find which permission this route requires
+      const requiredPermission = Object.entries(ROUTE_PERMISSIONS).find(([route]) => {
+        return path === route || path.startsWith(`${route}/`)
+      })?.[1]
+
+      if (requiredPermission && !hasPermission(user, requiredPermission)) {
+        console.log(`Permission denied for ${path}. Required: ${requiredPermission}`)
+        return NextResponse.redirect(new URL('/access-denied', request.url))
+      }
     }
   }
 
@@ -55,12 +80,24 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/dashboard',
     '/users/:path*',
+    '/users',
     '/lead/:path*',
+    '/lead',
     '/calendar/:path*',
+    '/calendar',
     '/settings/:path*',
+    '/settings',
     '/inventory/:path*',
-    '/user/:path*',
-    '/login'
+    '/inventory',
+    '/favorites/:path*',
+    '/favorites',
+    '/mls/:path*',
+    '/mls',
+    '/inbox/:path*',
+    '/inbox',
+    '/login',
+    '/access-denied'
   ],
 } 

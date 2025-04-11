@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Image from 'next/image';
+import { hasPermission, refreshUserData } from "@/lib/utils";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -52,9 +53,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = refreshUserData();
       if (userData) {
-        setUser(JSON.parse(userData));
+        setUser(userData);
       } else {
         router.push('/login');
       }
@@ -67,20 +68,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const navigationItems = [
-    { href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" />, label: 'Dashboard' },
-    { href: '/lead', icon: <Users className="h-5 w-5" />, label: 'Lead' },
-    ...(user?.permissions?.favorites ? [{
-      href: '/favorites',
-      icon: <Heart className="h-5 w-5" />,
-      label: 'Favorites'
-    }] : []),
-    { href: '/inbox', icon: <Mail className="h-5 w-5" />, label: 'Inbox' },
-    { href: '/inventory', icon: <Home className="h-5 w-5" />, label: 'Inventory' },
-    { href: '/users', icon: <Users className="h-5 w-5" />, label: 'Users' },
-    { href: '/mls', icon: <Building className="h-5 w-5" />, label: 'MLS' },
-    { href: '/calendar', icon: <Calendar className="h-5 w-5" />, label: 'Calendar' },
-    { href: '/settings', icon: <Settings className="h-5 w-5" />, label: 'Settings' },
+    { href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" />, label: 'Dashboard', permission: 'dashboard' },
+    { href: '/lead', icon: <Users className="h-5 w-5" />, label: 'Lead', permission: 'leads' },
+    { href: '/favorites', icon: <Heart className="h-5 w-5" />, label: 'Favorites', permission: 'favorites' },
+    { href: '/inbox', icon: <Mail className="h-5 w-5" />, label: 'Inbox', permission: 'email' },
+    { href: '/inventory', icon: <Home className="h-5 w-5" />, label: 'Inventory', permission: 'inventory' },
+    { href: '/users', icon: <Users className="h-5 w-5" />, label: 'Users', permission: 'settings' },
+    { href: '/mls', icon: <Building className="h-5 w-5" />, label: 'MLS', permission: 'mls' },
+    { href: '/calendar', icon: <Calendar className="h-5 w-5" />, label: 'Calendar', permission: 'calendar' },
+    { href: '/settings', icon: <Settings className="h-5 w-5" />, label: 'Settings', permission: 'settings' },
   ];
+
+  // Filter navigation items based on user permissions
+  const filteredNavigationItems = navigationItems.filter(item => {
+    if (!user) return false;
+    return hasPermission(user, item.permission);
+  });
 
   const handleLogout = () => {
     // Only remove auth-related items
@@ -190,7 +193,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="flex flex-col h-[calc(100%-3.5rem)] sm:h-[calc(100%-4rem)] p-3 sm:p-4">
             <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:space-y-1">
-              {navigationItems.map((item) => (
+              {filteredNavigationItems.map((item) => (
           <Link
                   key={item.href}
                   href={item.href}

@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { Permission } from '@/lib/types'
+import { refreshUserData, hasPermission, defaultPermissions } from '@/lib/utils'
 
 export function usePermissions(moduleId: string) {
   const [permissions, setPermissions] = useState<Permission | null>(null)
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user')
-    if (!userData) return
+    const user = refreshUserData()
+    if (!user) return
 
-    const user = JSON.parse(userData)
-    
     // Check if user is admin first
     if (user.role === 'Administrator' || user.role === 'admin') {
       setPermissions({
@@ -25,14 +23,21 @@ export function usePermissions(moduleId: string) {
     }
 
     // For non-admin users, check their specific permissions
-    const hasPermission = user.permissions?.[moduleId] ?? false
+    const modulePermission = hasPermission(user, moduleId)
+    
+    // Ensure user.permissions exists in localStorage
+    if (!user.permissions) {
+      user.permissions = { ...defaultPermissions }
+      localStorage.setItem('user', JSON.stringify(user))
+    }
+    
     setPermissions({
       moduleId,
       moduleName: moduleId,
-      canView: hasPermission,
-      canAdd: hasPermission,
-      canEdit: hasPermission,
-      canDelete: hasPermission
+      canView: modulePermission,
+      canAdd: modulePermission,
+      canEdit: modulePermission,
+      canDelete: modulePermission
     })
   }, [moduleId])
 

@@ -1,6 +1,9 @@
 import { DashboardClient } from "@/components/dashboard-client"
+import { withPermission } from "@/components/protect-route"
 
-export default function DashboardPage() {
+function DashboardPage() {
   return <DashboardClient />
 }
+
+export default withPermission(DashboardPage, 'dashboard')
 

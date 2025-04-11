@@ -6,8 +6,9 @@ import { LeadListing } from "@/components/lead-listing"
 import { LeadForm } from "@/components/lead-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { withPermission } from "@/components/protect-route"
 
-export default function LeadPage() {
+function LeadPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
 
   return (
@@ -26,4 +27,7 @@ export default function LeadPage() {
     </DashboardLayout>
   )
 }
+
+// Export the component with permission check
+export default withPermission(LeadPage, 'leads')
 

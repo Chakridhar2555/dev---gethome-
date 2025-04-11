@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { dataService, type Property } from '@/lib/data-service'
 import type { jsPDF } from 'jspdf'
+import { withPermission } from "@/components/protect-route"
 
 // This ensures the jsPDF import is only loaded on the client side
 let JsPDF: typeof jsPDF
@@ -41,7 +42,7 @@ if (typeof window !== 'undefined') {
   })
 }
 
-export default function InventoryPage() {
+function InventoryPage() {
   const router = useRouter()
   const [inventory, setInventory] = useState<Property[]>([])
   const [isGenerating, setIsGenerating] = useState<string | null>(null)
@@ -284,4 +285,6 @@ export default function InventoryPage() {
     </DashboardLayout>
   )
 }
+
+export default withPermission(InventoryPage, 'inventory')
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { User, Lock } from "lucide-react"
+import { defaultPermissions } from "@/lib/utils"
 
 export function LoginForm() {
   const [loading, setLoading] = useState(false)
@@ -52,8 +53,49 @@ export function LoginForm() {
         throw new Error(data.error || "Invalid credentials")
       }
 
-      // Store auth data
-      localStorage.setItem("user", JSON.stringify(data.user))
+      // Ensure the user object has proper permissions before storing in localStorage
+      if (data.user) {
+        // If user is admin, ensure they have all permissions
+        if (data.user.role === 'Administrator' || data.user.role === 'admin') {
+          data.user.role = 'Administrator' // Normalize role
+          data.user.permissions = {
+            dashboard: true,
+            leads: true,
+            calendar: true,
+            email: true,
+            settings: true,
+            inventory: true,
+            favorites: true,
+            mls: true
+          }
+        } 
+        // Ensure non-admin users have the correct permissions
+        else {
+          // If permissions don't exist, initialize with default (all false)
+          if (!data.user.permissions) {
+            data.user.permissions = { ...defaultPermissions }
+          } else {
+            // Ensure specific format for permissions, only use the ones explicitly set to true
+            const existingPermissions = data.user.permissions
+            data.user.permissions = { ...defaultPermissions }
+            
+            // Only copy over the permissions that are explicitly true
+            Object.keys(existingPermissions).forEach(key => {
+              if (existingPermissions[key] === true) {
+                data.user.permissions[key] = true
+              }
+            })
+          }
+        }
+        
+        // Store the enhanced user data
+        localStorage.setItem("user", JSON.stringify(data.user))
+        
+        // Also store the token if available
+        if (data.token) {
+          localStorage.setItem("token", data.token)
+        }
+      }
 
       toast({
         title: "Success",
