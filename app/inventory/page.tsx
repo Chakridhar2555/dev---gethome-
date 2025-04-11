@@ -32,7 +32,7 @@ import {
 } from "lucide-react"
 import { dataService, type Property } from '@/lib/data-service'
 import type { jsPDF } from 'jspdf'
-import { withPermission } from "@/components/protect-route"
+import { ProtectRoute } from "@/components/protect-route"
 
 // This ensures the jsPDF import is only loaded on the client side
 let JsPDF: typeof jsPDF
@@ -286,5 +286,11 @@ function InventoryPage() {
   )
 }
 
-export default withPermission(InventoryPage, 'inventory')
+export default function InventoryPageWrapper() {
+  return (
+    <ProtectRoute requiredPermission="inventory">
+      <InventoryPage />
+    </ProtectRoute>
+  )
+}
 
