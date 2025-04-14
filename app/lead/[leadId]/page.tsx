@@ -108,8 +108,16 @@ export default function LeadDetailPage() {
       const leadId = params.leadId as string
       if (!leadId) return
 
+      // Get current user from localStorage
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        router.push('/login');
+        return;
+      }
+      const user = JSON.parse(userData);
+
       console.log('Fetching lead with ID:', leadId)
-      const response = await fetch(`/api/leads/${leadId}`)
+      const response = await fetch(`/api/leads/${leadId}?userRole=${user.role}`)
       const data = await response.json()
 
       if (!response.ok) {

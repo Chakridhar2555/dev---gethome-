@@ -245,11 +245,15 @@ export default function LeadsPage() {
       }
       const user = JSON.parse(userData);
 
-      const response = await fetch(`/api/leads?assignedTo=${user._id}`);
+      const response = await fetch(`/api/leads?assignedTo=${user._id}&userRole=${user.role}`);
       const data = await response.json();
 
-      // Only set leads that are assigned to the current user
-      setLeads(data.filter((lead: Lead) => lead.assignedTo === user._id));
+      // For non-admin users, only show their assigned leads
+      if (user.role !== 'Administrator') {
+        setLeads(data.filter((lead: Lead) => lead.assignedTo === user._id));
+      } else {
+        setLeads(data);
+      }
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching leads:", error);

@@ -110,9 +110,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assignedTo');
+    const userRole = searchParams.get('userRole');
 
     let query = {};
-    if (assignedTo) {
+    
+    // If user is not an admin, only show their assigned leads
+    if (userRole !== 'Administrator' && assignedTo) {
       query = { assignedTo };
     }
 
