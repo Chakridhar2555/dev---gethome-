@@ -15,13 +15,17 @@ const defaultPermissions = {
 };
 
 export async function GET(request: Request) {
+  console.log('GET /api/users - Starting request');
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
 
+    console.log('Connecting to database...');
     const { db } = await connectToDatabase();
+    console.log('Connected to database successfully');
+
     const query = search
       ? {
           $or: [
@@ -31,13 +35,18 @@ export async function GET(request: Request) {
         }
       : {};
 
+    console.log('Executing database query...');
     const total = await db.collection('users').countDocuments(query);
+    console.log('Total users found:', total);
+
     const users = await db.collection('users')
       .find(query)
       .project({ password: 0 })
       .skip((page - 1) * limit)
       .limit(limit)
       .toArray();
+
+    console.log('Users retrieved:', users.length);
 
     return NextResponse.json({
       users,
@@ -46,9 +55,9 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error in GET /api/users:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch users' },
+      { error: 'Failed to fetch users', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { UserPlus, Edit2, Trash2 } from "lucide-react"
+import { UserPlus, Edit2, Trash2, Loader2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -86,6 +86,8 @@ const roles = [
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -94,15 +96,7 @@ export default function UsersPage() {
     username: "",
     password: "",
     role: "",
-    permissions: {
-      dashboard: false,
-      leads: false,
-      calendar: false,
-      email: false,
-      settings: false,
-      inventory: false,
-      favorites: false,
-    },
+    permissions: defaultPermissions,
   });
   const { toast } = useToast();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -112,38 +106,43 @@ export default function UsersPage() {
   }, []);
 
   const fetchUsers = async () => {
+    console.log('Fetching users...');
+    setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch("/api/users");
-      const data = await response.json() as UsersApiResponse;
+      console.log('Response status:', response.status);
       
-      // Check if data has the users property and it's an array
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json() as UsersApiResponse;
+      console.log('Received data:', data);
+      
       if (data && Array.isArray(data.users)) {
+        console.log('Valid users data received, filtering...');
         const validUsers = data.users.filter((user: User) => 
           user && 
           typeof user._id === 'string' && 
           typeof user.name === 'string' &&
-          typeof user.email === 'string' &&
-          typeof user.username === 'string' &&
-          typeof user.role === 'string'
+          typeof user.email === 'string'
         );
+        console.log('Filtered valid users:', validUsers);
         setUsers(validUsers);
       } else {
-        console.error('Invalid users data received:', data);
-        setUsers([]);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Invalid data format received from server",
-        });
+        throw new Error('Invalid data format received from server');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers([]);
+      setError(error instanceof Error ? error.message : 'An error occurred while fetching users');
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to fetch users",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,15 +176,7 @@ export default function UsersPage() {
         username: "",
         password: "",
         role: "",
-        permissions: {
-          dashboard: false,
-          leads: false,
-          calendar: false,
-          email: false,
-          settings: false,
-          inventory: false,
-          favorites: false,
-        },
+        permissions: defaultPermissions,
       });
       fetchUsers();
     } catch (error) {
@@ -222,98 +213,93 @@ export default function UsersPage() {
     }
   };
 
-  const renderPermissions = (permissions: User['permissions'] = defaultPermissions) => {
-    if (!permissions) return null;
-    
-    return Object.entries(permissions).map(([key, value]) => (
-      value && (
-        <span key={key} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-          {key}
-        </span>
-      )
-    ));
-  };
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading users...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <div className="text-red-500 mb-4">Error: {error}</div>
+          <Button onClick={fetchUsers}>Try Again</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 p-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Users</CardTitle>
-            <Button onClick={() => {
-              setEditingUser(null);
-              setFormData({
-                name: "",
-                email: "",
-                username: "",
-                password: "",
-                role: "",
-                permissions: defaultPermissions,
-              });
-              setIsNewUserDialogOpen(true);
-            }}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead>Permissions</TableHead>
-                  <TableHead>Actions</TableHead>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Users</h1>
+          <Button onClick={() => setIsNewUserDialogOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </div>
+
+        {users.length === 0 ? (
+          <div className="text-center py-8">
+            <p>No users found</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setFormData({
+                            name: user.name,
+                            email: user.email,
+                            username: user.username || "",
+                            password: "",
+                            role: user.role,
+                            permissions: user.permissions || defaultPermissions,
+                          });
+                          setIsNewUserDialogOpen(true);
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setUserToDelete(user)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user._id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {renderPermissions(user.permissions)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setFormData({
-                              name: user.name,
-                              email: user.email,
-                              username: user.username,
-                              password: "",
-                              role: user.role,
-                              permissions: user.permissions || defaultPermissions,
-                            });
-                            setIsNewUserDialogOpen(true);
-                          }}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setUserToDelete(user)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              ))}
+            </TableBody>
+          </Table>
+        )}
 
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
           <AlertDialogContent>
@@ -445,7 +431,7 @@ export default function UsersPage() {
                             ...formData,
                             permissions: {
                               ...formData.permissions,
-                              [key]: checked,
+                              [key]: checked === true,
                             },
                           })
                         }
