@@ -194,17 +194,28 @@ export function LeadListing() {
     try {
       setLoading(true)
       
+      // Get current user from localStorage
+      const userData = localStorage.getItem('user')
+      if (!userData) {
+        router.push('/login')
+        return
+      }
+      const user = JSON.parse(userData)
+      
       // Fetch leads from MongoDB
-      const response = await fetch("/api/leads")
+      const response = await fetch(`/api/leads?assignedTo=${user._id}`)
       if (!response.ok) {
         throw new Error("Failed to fetch leads")
       }
       
       const leads = await response.json()
       
+      // Filter leads to only show those assigned to the current user
+      const userLeads = leads.filter((lead: Lead) => lead.assignedTo === user._id)
+      
       // Update both state and localStorage
-      setLeads(leads)
-      localStorage.setItem('leads', JSON.stringify(leads))
+      setLeads(userLeads)
+      localStorage.setItem('leads', JSON.stringify(userLeads))
       
     } catch (error) {
       console.error("Fetch leads error:", error)
