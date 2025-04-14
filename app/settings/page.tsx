@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { DashboardLayout } from "@/components/layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Bell, Mail, Shield, User, Building, Briefcase } from "lucide-react"
+import { Bell, Mail, Shield, User, Building, Briefcase, Loader2 } from "lucide-react"
 
 interface UserSettings {
   personal: {
@@ -173,6 +172,7 @@ export default function SettingsPage() {
       teamMembers: [],
     },
   })
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     // Load user profile and settings from the API
@@ -222,6 +222,7 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
     try {
       // First update the user profile data in the users collection
       const userResponse = await fetch('/api/users/profile', {
@@ -250,12 +251,12 @@ export default function SettingsPage() {
       })
 
       if (!settingsResponse.ok) {
-        throw new Error('Failed to save settings')
+        throw new Error('Failed to update settings')
       }
 
       toast({
-        title: "Settings Updated",
-        description: "Your settings have been successfully saved.",
+        title: "Success",
+        description: "Settings saved successfully",
       })
     } catch (error) {
       console.error('Error saving settings:', error)
@@ -264,36 +265,25 @@ export default function SettingsPage() {
         title: "Error",
         description: "Failed to save settings. Please try again.",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Settings</h1>
+      </div>
 
-        <Tabs defaultValue="personal" className="space-y-4">
+      <div className="flex flex-col space-y-8">
+        <Tabs defaultValue="personal" className="w-full">
           <TabsList>
-            <TabsTrigger value="personal" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Personal
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Email
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
-            <TabsTrigger value="business" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Business
-            </TabsTrigger>
+            <TabsTrigger value="personal">Personal</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="business">Business</TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal">
@@ -305,40 +295,46 @@ export default function SettingsPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label>Full Name</Label>
                       <Input
-                        id="name"
                         value={settings.personal.name}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          personal: { ...settings.personal, name: e.target.value }
-                        })}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          personal: { ...prev.personal, name: e.target.value }
+                        }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label>Username</Label>
                       <Input
-                        id="username"
                         value={settings.personal.username}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          personal: { ...settings.personal, username: e.target.value }
-                        })}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          personal: { ...prev.personal, username: e.target.value }
+                        }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
+                      <Label>Phone</Label>
                       <Input
-                        id="phone"
                         value={settings.personal.phone}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          personal: { ...settings.personal, phone: e.target.value }
-                        })}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          personal: { ...prev.personal, phone: e.target.value }
+                        }))}
                       />
                     </div>
                   </div>
-                  <Button type="submit">Save Changes</Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -606,36 +602,33 @@ export default function SettingsPage() {
                       </div>
                       {settings.emailSettings.templates.seasonalWishes.enabled && (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Holidays</Label>
-                              <div className="space-y-2">
-                                {Object.entries(settings.emailSettings.templates.seasonalWishes.holidays).map(([holiday, enabled]) => (
-                                  <div key={holiday} className="flex items-center space-x-2">
-                                    <Switch
-                                      checked={enabled}
-                                      onCheckedChange={(checked) => setSettings({
-                                        ...settings,
-                                        emailSettings: {
-                                          ...settings.emailSettings,
-                                          templates: {
-                                            ...settings.emailSettings.templates,
-                                            seasonalWishes: {
-                                              ...settings.emailSettings.templates.seasonalWishes,
-                                              holidays: {
-                                                ...settings.emailSettings.templates.seasonalWishes.holidays,
-                                                [holiday]: checked
-                                              }
+                          <div className="space-y-4">
+                            {Object.entries(settings.emailSettings.templates.seasonalWishes.holidays).map(([holiday, enabled]) => (
+                              <div key={holiday} className="flex items-center space-x-2">
+                                <Switch
+                                  checked={enabled}
+                                  onCheckedChange={(checked) => {
+                                    setSettings({
+                                      ...settings,
+                                      emailSettings: {
+                                        ...settings.emailSettings,
+                                        templates: {
+                                          ...settings.emailSettings.templates,
+                                          seasonalWishes: {
+                                            ...settings.emailSettings.templates.seasonalWishes,
+                                            holidays: {
+                                              ...settings.emailSettings.templates.seasonalWishes.holidays,
+                                              [holiday]: checked
                                             }
                                           }
                                         }
-                                      })}
-                                    />
-                                    <Label className="capitalize">{holiday}</Label>
-                                  </div>
-                                ))}
+                                      }
+                                    });
+                                  }}
+                                />
+                                <Label className="capitalize">{holiday}</Label>
                               </div>
-                            </div>
+                            ))}
                           </div>
                           <Textarea
                             value={settings.emailSettings.templates.seasonalWishes.template}
@@ -923,7 +916,7 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  )
+    </div>
+  );
 }
 
