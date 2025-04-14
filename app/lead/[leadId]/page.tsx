@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, Phone, Plus, Save } from "lucide-react"
+import { ArrowLeft, Phone, Plus, Save, User, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { CallHistory } from "@/components/call-history"
 import { Lead as BaseLeadType, Task, Showing } from "@/lib/types"
@@ -96,6 +96,7 @@ export default function LeadDetailPage() {
   const [newNote, setNewNote] = useState("")
   const [users, setUsers] = useState<{ _id: string; name: string }[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [assignedUser, setAssignedUser] = useState<string>("")
 
   useEffect(() => {
     fetchLead()
@@ -118,6 +119,9 @@ export default function LeadDetailPage() {
 
       console.log('Fetched lead data:', data)
       setLeadData(data)
+      if (data.assignedTo) {
+        setAssignedUser(data.assignedTo)
+      }
     } catch (error) {
       console.error("Fetch lead error:", error)
       toast({
@@ -125,27 +129,28 @@ export default function LeadDetailPage() {
         title: "Error",
         description: "Failed to fetch lead details",
       })
-      // Redirect back to leads page on error
       router.push('/lead')
     }
   }
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
       const response = await fetch('/api/users')
+      if (!response.ok) {
+        throw new Error('Failed to fetch users')
+      }
       const data = await response.json()
       
-      // Ensure data is an array and has the correct shape
-      if (Array.isArray(data)) {
-        const validUsers = data.filter(user => 
-          user && 
-          typeof user === 'object' && 
-          typeof user._id === 'string' && 
-          typeof user.name === 'string'
-        )
-        setUsers(validUsers)
+      console.log('Users API response:', data);
+      
+      // The API returns { users: User[] } structure
+      if (data && data.users && Array.isArray(data.users)) {
+        // Don't filter users, show all of them
+        setUsers(data.users)
+        console.log('Set users:', data.users);
       } else {
-        console.error('Invalid users data received:', data)
+        console.error('Invalid users data structure received:', data)
         setUsers([])
       }
     } catch (error) {
@@ -401,6 +406,44 @@ export default function LeadDetailPage() {
     });
   };
 
+  const handleAssignUser = async (userId: string) => {
+    if (!leadData) return;
+    
+    try {
+      console.log('Assigning user:', userId);
+      const response = await fetch(`/api/leads/${params.leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...leadData,
+          assignedTo: userId === "unassigned" ? "" : userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to assign user');
+      }
+
+      const updatedLead = await response.json();
+      setLeadData(updatedLead);
+      setAssignedUser(userId === "unassigned" ? "" : userId);
+      
+      toast({
+        title: "Success",
+        description: userId === "unassigned" ? "User unassigned successfully" : "User assigned successfully"
+      });
+    } catch (error) {
+      console.error('Error assigning user:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to assign user"
+      });
+    }
+  };
+
   if (!leadData) {
     return (
       <DashboardLayout>
@@ -416,16 +459,54 @@ export default function LeadDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 p-8">
         <div className="flex items-center justify-between">
           <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="border-black text-black hover:bg-black hover:text-white"
+            variant="ghost"
+            onClick={() => router.push('/lead')}
+            className="mb-4"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Leads
           </Button>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <User className="h-4 w-4" />
+              <Select
+                value={assignedUser || leadData?.assignedTo || "unassigned"}
+                onValueChange={handleAssignUser}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Assign to..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user._id} value={user._id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -515,7 +596,7 @@ export default function LeadDetailPage() {
                       <Label>Assigned To</Label>
                       <Select
                         value={leadData.assignedTo || 'unassigned'}
-                        onValueChange={(value) => setLeadData({ ...leadData, assignedTo: value })}
+                        onValueChange={(value) => handleAssignUser(value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a user" />
@@ -792,18 +873,6 @@ export default function LeadDetailPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                {/* Add Save Changes button at the bottom */}
-                <div className="border-t pt-6 mt-6">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="w-full bg-[#ef4444] hover:bg-[#dc2626] text-white"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </Button>
                 </div>
               </form>
             </CardContent>
