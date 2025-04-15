@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CallHistory } from "@/components/call-history"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Phone, Mail, Home, Calendar, ClipboardList, PlusCircle, Plus, Upload, Info, History, Search, Filter } from "lucide-react"
+import { Phone, Mail, Home, Calendar, ClipboardList, PlusCircle, Plus, Upload, Info, History, Search, Filter, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StrategyPlanner } from "@/components/strategy-planner"
@@ -315,8 +315,24 @@ export function LeadListing() {
     if (!file) return;
 
     try {
+      // Show loading toast
+      toast({
+        title: "Processing",
+        description: "Reading and processing your Excel file...",
+      });
+      
       // Parse Excel file
       const importedLeads = await parseExcelLeads(file);
+      
+      if (!importedLeads || importedLeads.length === 0) {
+        throw new Error("No valid leads found in the Excel file");
+      }
+      
+      // Show progress toast
+      toast({
+        title: "Uploading",
+        description: `Uploading ${importedLeads.length} leads to the database...`,
+      });
       
       // Save to MongoDB
       const response = await fetch("/api/leads/bulk", {
@@ -325,8 +341,10 @@ export function LeadListing() {
         body: JSON.stringify({ leads: importedLeads }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to save leads to database");
+        throw new Error(result.error || "Failed to save leads to database");
       }
 
       // Get existing leads from localStorage
@@ -341,16 +359,24 @@ export function LeadListing() {
       // Refresh leads display
       fetchLeads();
       
-      toast({
-        title: "Success",
-        description: `${importedLeads.length} leads imported successfully`,
-      });
+      // Show success message with warning if applicable
+      if (result.warning) {
+        toast({
+          title: "Success with Warnings",
+          description: `${result.insertedCount} leads imported. ${result.warning}`,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `${result.insertedCount} leads imported successfully`,
+        });
+      }
     } catch (error) {
       console.error('Import error:', error);
       toast({
         variant: "destructive",
         title: "Import Failed",
-        description: "Failed to import leads. Please check the file format and try again.",
+        description: error instanceof Error ? error.message : "Failed to import leads. Please check the file format and try again.",
       });
     } finally {
       // Clear the file input
@@ -471,6 +497,37 @@ export function LeadListing() {
     return true
   })
 
+  const clearAllLeads = async () => {
+    try {
+      // Clear leads from localStorage
+      localStorage.removeItem('leads')
+      
+      // Clear leads from database
+      const response = await fetch("/api/leads/clear", {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to clear leads from database")
+      }
+
+      // Update state
+      setLeads([])
+      
+      toast({
+        title: "Success",
+        description: "All leads have been cleared successfully",
+      })
+    } catch (error) {
+      console.error("Clear leads error:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to clear leads. Please try again.",
+      })
+    }
+  }
+
   // Only render table content after mounting
   if (!mounted) {
     return (
@@ -516,10 +573,27 @@ export function LeadListing() {
                 <Home className="h-4 w-4 mr-2" />
                 Website Enquiries (0)
               </Button>
-              <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-50">
-                <Upload className="h-4 w-4 mr-2" />
-                Import Leads
+              <Button 
+                variant="outline" 
+                className="text-red-500 border-red-500 hover:bg-red-50"
+                onClick={clearAllLeads}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear All Leads
               </Button>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="file-upload"
+                />
+                <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-50">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Leads
+                </Button>
+              </div>
             </div>
           </div>
 
