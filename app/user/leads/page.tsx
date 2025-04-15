@@ -270,6 +270,16 @@ export default function LeadsPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Validate required fields
+      if (!formData.name || !formData.email || !formData.phone || !formData.property) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Please fill in all required fields (name, email, phone, and property)",
+        });
+        return;
+      }
+
       const data = {
         ...formData,
         property: typeof formData.property === 'string' ? formData.property : "",
@@ -288,15 +298,25 @@ export default function LeadsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create lead');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create lead');
       }
 
       const newLead = await response.json();
       setLeads(prev => [...prev, newLead]);
       setIsNewLeadDialogOpen(false);
       setFormData(defaultFormData);
+      toast({
+        title: "Success",
+        description: "Lead created successfully",
+      });
     } catch (error) {
       console.error('Error submitting form:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create lead",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -385,7 +405,7 @@ export default function LeadsPage() {
       email: lead.email || "",
       phone: lead.phone || "",
       status: lead.status || "",
-      property: typeof lead.property === 'string' ? lead.property : "",
+      property: lead.property || "",
       notes: lead.notes || "",
       leadStatus: lead.leadStatus || "hot",
       leadResponse: lead.leadResponse || "active",
@@ -823,6 +843,20 @@ export default function LeadsPage() {
                     location: e.target.value
                   })}
                   className="bg-gray-700 border-gray-600"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="property">Property</Label>
+                <Input
+                  id="property"
+                  value={formData.property || ""}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    property: e.target.value
+                  })}
+                  required
+                  className="bg-gray-700 border-gray-600"
+                  placeholder="Enter property details"
                 />
               </div>
               <div className="space-y-2">

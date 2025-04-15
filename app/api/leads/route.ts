@@ -159,10 +159,25 @@ export async function POST(request: Request) {
     const leadData = await request.json()
     const { db } = await connectToDatabase()
 
-    // Validate required fields
-    if (!leadData.name || !leadData.email || !leadData.phone || !leadData.property) {
+    // Validate required fields with specific messages
+    const missingFields = []
+    if (!leadData.name) missingFields.push('name')
+    if (!leadData.email) missingFields.push('email')
+    if (!leadData.phone) missingFields.push('phone')
+    if (!leadData.property) missingFields.push('property')
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(leadData.email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
         { status: 400 }
       )
     }
@@ -197,7 +212,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating lead:", error)
     return NextResponse.json(
-      { error: "Failed to create lead" },
+      { error: error instanceof Error ? error.message : "Failed to create lead" },
       { status: 500 }
     )
   }

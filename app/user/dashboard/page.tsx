@@ -57,6 +57,19 @@ interface CalendarEvent {
   location?: string
 }
 
+interface ScheduledTask {
+  id: string;
+  title: string;
+  date: Date;
+  time: string;
+  type: 'task' | 'event';
+  source: 'task' | 'calendar';
+  description?: string;
+  priority?: string;
+  status?: string;
+  location?: string;
+}
+
 // Add type for motion table row
 const MotionTableRow = motion(TableRow)
 
@@ -219,6 +232,7 @@ function TasksTable({ allTasks, getStatusIcon, getPriorityColor }: {
 }
 
 export default function UserDashboard() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [metrics, setMetrics] = useState({
     totalTasks: 0,
     totalLeads: 0,
@@ -226,6 +240,8 @@ export default function UserDashboard() {
     upcomingTasks: 0
   });
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -251,6 +267,39 @@ export default function UserDashboard() {
       if (!tasksResponse.ok) throw new Error('Failed to fetch tasks');
       const tasksData = await tasksResponse.json();
       setAllTasks(tasksData.tasks || []);
+
+      // Fetch events
+      const eventsResponse = await fetch('/api/events');
+      if (!eventsResponse.ok) throw new Error('Failed to fetch events');
+      const eventsData = await eventsResponse.json();
+      setEvents(eventsData);
+
+      // Combine tasks and events into scheduled tasks
+      const combinedTasks: ScheduledTask[] = [
+        ...tasksData.tasks.map((task: Task) => ({
+          id: task.id,
+          title: task.title,
+          date: typeof task.date === 'string' ? new Date(task.date) : task.date,
+          time: format(typeof task.date === 'string' ? new Date(task.date) : task.date, 'h:mm a'),
+          type: 'task',
+          source: 'task' as const,
+          description: task.description,
+          priority: task.priority,
+          status: task.status
+        })),
+        ...eventsData.map((event: CalendarEvent) => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          time: event.time,
+          type: 'event',
+          source: 'calendar' as const,
+          description: event.description,
+          location: event.location
+        }))
+      ];
+
+      setScheduledTasks(combinedTasks);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -314,13 +363,70 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="space-y-4 p-8">
+    <div className="space-y-6 p-8">
       <MetricsCards metrics={metrics} />
       <TasksTable 
         allTasks={allTasks} 
         getStatusIcon={getStatusIcon} 
         getPriorityColor={getPriorityColor} 
       />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-gray-100">Calendar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<div>Loading calendar...</div>}>
+              <MonthView
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
+            </Suspense>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-gray-100">Scheduled Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {scheduledTasks.length === 0 ? (
+                <p className="text-center text-gray-400 py-4">No scheduled tasks</p>
+              ) : (
+                scheduledTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-start space-x-4 p-4 rounded-lg bg-gray-700/50"
+                  >
+                    <div className="flex-shrink-0">
+                      {task.source === 'task' ? (
+                        <ClipboardList className="h-5 w-5 text-blue-400" />
+                      ) : (
+                        <CalendarIcon className="h-5 w-5 text-yellow-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-100">{task.title}</p>
+                      <p className="text-sm text-gray-400">
+                        {format(task.date, 'MMM dd, yyyy')} at {task.time}
+                      </p>
+                      {task.description && (
+                        <p className="text-sm text-gray-400 mt-1">{task.description}</p>
+                      )}
+                      {task.location && (
+                        <div className="flex items-center mt-1 text-sm text-gray-400">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {task.location}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 
