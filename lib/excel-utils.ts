@@ -12,62 +12,93 @@ export const parseExcelLeads = (file: File): Promise<Partial<Lead>[]> => {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
 
         console.log('Parsed Excel data:', jsonData);
 
         const leads: Partial<Lead>[] = jsonData.map((row: any) => {
+          // Get the first non-empty value from the row for each field
+          const getFieldValue = (possibleKeys: string[]) => {
+            for (const key of possibleKeys) {
+              const value = row[key];
+              if (value !== undefined && value !== '') {
+                return value.toString().trim();
+              }
+            }
+            return '';
+          };
+
+          // Extract name, email and phone based on column position and possible header names
+          const name = getFieldValue([
+            '0', // First column
+            'Name',
+            'name',
+            'NAME',
+            Object.keys(row)[0] // Fallback to first column if no match
+          ]);
+
+          const email = getFieldValue([
+            '1', // Second column
+            'Email',
+            'email',
+            'EMAIL',
+            Object.keys(row)[1] // Fallback to second column if no match
+          ]);
+
+          const phone = getFieldValue([
+            '2', // Third column
+            'Phone',
+            'phone',
+            'PHONE',
+            'Mobile',
+            'mobile',
+            'Contact',
+            Object.keys(row)[2] // Fallback to third column if no match
+          ]);
+
           // Generate a unique ID for each lead
           const _id = uuidv4();
           
-          // Helper function to safely get a value with fallbacks
-          const getValue = (field: string, defaultValue: any = '') => {
-            // Try different case variations of the field name
-            return row[field] || 
-                   row[field.charAt(0).toUpperCase() + field.slice(1)] || 
-                   row[field.toUpperCase()] || 
-                   defaultValue;
-          };
-          
-          // Map Excel columns to lead properties with default values
           return {
             _id,
-            name: getValue('name', 'Unnamed Lead'),
-            email: getValue('email', 'no-email@example.com'),
-            phone: getValue('phone', '000-000-0000'),
-            leadStatus: getValue('leadStatus', 'cold'),
-            leadType: getValue('leadType', 'buyer'),
-            leadSource: getValue('leadSource', 'google ads'),
-            leadResponse: getValue('leadResponse', 'inactive'),
-            clientType: getValue('clientType', 'custom buyer'),
-            property: getValue('property', 'Unspecified Property'),
-            location: getValue('location', ''),
-            notes: getValue('notes', ''),
+            name: name || 'Unnamed Lead',
+            email: email || 'no-email@example.com',
+            phone: phone || '000-000-0000',
+            // Default values for remaining fields
+            leadStatus: 'cold',
+            leadType: 'buyer',
+            leadSource: 'refferal',
+            leadResponse: 'inactive',
+            clientType: 'custom buyer',
+            property: 'Unspecified Property',
+            location: '',
+            notes: 'Imported from Excel file. Additional information to be added manually.',
             date: new Date().toISOString(),
             callHistory: [],
             tasks: [],
             propertyPreferences: {
               budget: {
-                min: getValue('budgetMin', 0),
-                max: getValue('budgetMax', 0)
+                min: 0,
+                max: 0
               },
-              propertyType: Array.isArray(getValue('propertyType')) ? 
-                getValue('propertyType') : 
-                getValue('propertyType') ? [getValue('propertyType')] : [],
-              bedrooms: getValue('bedrooms', 0),
-              bathrooms: getValue('bathrooms', 0),
-              locations: Array.isArray(getValue('locations')) ? 
-                getValue('locations') : 
-                getValue('locations') ? [getValue('locations')] : [],
-              features: Array.isArray(getValue('features')) ? 
-                getValue('features') : 
-                getValue('features') ? [getValue('features')] : []
+              propertyType: [],
+              bedrooms: 0,
+              bathrooms: 0,
+              locations: [],
+              features: []
             }
           };
         });
 
-        console.log('Processed leads:', leads);
-        resolve(leads);
+        // Filter out any leads that don't have either a name, email, or phone
+        const validLeads = leads.filter(lead => 
+          lead.name !== 'Unnamed Lead' || 
+          lead.email !== 'no-email@example.com' || 
+          lead.phone !== '000-000-0000'
+        );
+
+        console.log('Processed leads:', validLeads);
+        resolve(validLeads);
       } catch (error) {
         console.error('Excel parsing error:', error);
         reject(error);
