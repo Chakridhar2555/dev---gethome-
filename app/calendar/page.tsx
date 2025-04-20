@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Plus, RefreshCcw } from "lucide-react"
+import { Plus, RefreshCcw, Clock, MapPin } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { format } from 'date-fns'
 
 interface Showing {
   id: string
@@ -24,12 +25,15 @@ interface Showing {
 interface Event {
   _id: string
   title: string
-  date: string
+  date: Date
   time: string
   type: 'viewing' | 'meeting' | 'open-house' | 'follow-up' | 'call'
   description: string
   location?: string
-  status: string
+  status: 'scheduled' | 'completed' | 'cancelled'
+  leadId?: string
+  leadName?: string
+  showingId?: string
 }
 
 export default function CalendarPage() {
@@ -47,29 +51,30 @@ export default function CalendarPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Fetch lead showings to ensure they're synchronized with events
-      await fetch('/api/showings')
+      // Fetch lead showings
+      const showingsResponse = await fetch('/api/showings')
+      if (!showingsResponse.ok) {
+        throw new Error('Failed to fetch showings')
+      }
+      const showingsData = await showingsResponse.json()
+      setShowings(showingsData.map((showing: any) => ({
+        ...showing,
+        date: new Date(showing.date)
+      })))
 
-      // Now fetch all events (which will include synchronized showings)
-      const response = await fetch('/api/events')
-
-      if (!response.ok) {
+      // Fetch all events
+      const eventsResponse = await fetch('/api/events')
+      if (!eventsResponse.ok) {
         throw new Error('Failed to fetch events')
       }
-
-      const data = await response.json()
-
-      // Process the events to handle date objects
-      const processedEvents = data.map((event: any) => ({
+      const eventsData = await eventsResponse.json()
+      setEvents(eventsData.map((event: any) => ({
         ...event,
-        date: new Date(event.date),
-        type: event.type || 'meeting'
-      }))
-
-      setEvents(processedEvents)
+        date: new Date(event.date)
+      })))
 
       // Store in localStorage for components that read from there
-      localStorage.setItem('calendar_events', JSON.stringify(processedEvents))
+      localStorage.setItem('calendar_events', JSON.stringify(eventsData))
 
       setIsLoading(false)
     } catch (error) {
@@ -106,9 +111,12 @@ export default function CalendarPage() {
       id: showing.id,
       title: showing.property,
       time: showing.time,
-      type: 'showing',
+      type: 'viewing' as const,
       description: showing.notes || '',
-      status: showing.status
+      status: showing.status,
+      location: showing.property,
+      leadName: showing.leadName,
+      leadId: showing.leadId
     }))
 
     const dateEvents = getEventsForDate(date).map(event => ({
@@ -117,12 +125,45 @@ export default function CalendarPage() {
       time: event.time,
       type: event.type,
       description: event.description || '',
-      status: event.status
+      status: event.status,
+      location: event.location,
+      leadName: event.leadName,
+      leadId: event.leadId
     }))
 
     return [...dateShowings, ...dateEvents].sort((a, b) =>
       a.time.localeCompare(b.time)
     )
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-700'
+      case 'completed':
+        return 'bg-green-100 text-green-700'
+      case 'cancelled':
+        return 'bg-red-100 text-red-700'
+      default:
+        return 'bg-gray-100 text-gray-700'
+    }
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'viewing':
+        return 'bg-purple-100 text-purple-700'
+      case 'meeting':
+        return 'bg-blue-100 text-blue-700'
+      case 'open-house':
+        return 'bg-green-100 text-green-700'
+      case 'follow-up':
+        return 'bg-yellow-100 text-yellow-700'
+      case 'call':
+        return 'bg-orange-100 text-orange-700'
+      default:
+        return 'bg-gray-100 text-gray-700'
+    }
   }
 
   return (
@@ -174,107 +215,62 @@ export default function CalendarPage() {
                       fontWeight: 'bold'
                     }
                   }}
-                  styles={{
-                    head_cell: {
-                      width: '100%',
-                      fontSize: '1rem',
-                      padding: '1rem',
-                      color: 'var(--primary-700)'
-                    },
-                    cell: {
-                      width: '100%',
-                      height: '100%',
-                      fontSize: '1rem',
-                      padding: '1rem'
-                    },
-                    nav_button_previous: {
-                      width: '2.5rem',
-                      height: '2.5rem'
-                    },
-                    nav_button_next: {
-                      width: '2.5rem',
-                      height: '2.5rem'
-                    },
-                    caption: {
-                      fontSize: '1.25rem',
-                      padding: '1rem'
-                    }
-                  }}
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Activities Details Section */}
-          <Card className="h-fit">
+          <Card>
             <CardHeader>
               <CardTitle>
-                {selectedDate ?
-                  `Activities for ${selectedDate.toLocaleDateString()}` :
-                  'Select a date to view activities'
-                }
+                Activities for {format(selectedDate, 'MMMM d, yyyy')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center p-6">
-                  <div className="animate-pulse">Loading...</div>
+              {getAllActivitiesForDate(selectedDate).length > 0 ? (
+                <div className="space-y-4">
+                  {getAllActivitiesForDate(selectedDate).map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="p-4 border rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold">{activity.title}</h3>
+                        <Badge className={getStatusColor(activity.status)}>
+                          {activity.status}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          {activity.time}
+                        </div>
+                        {activity.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {activity.location}
+                          </div>
+                        )}
+                        {activity.description && (
+                          <p className="mt-2">{activity.description}</p>
+                        )}
+                        {activity.leadName && (
+                          <p className="text-sm text-gray-500">
+                            Lead: {activity.leadName}
+                          </p>
+                        )}
+                      </div>
+                      <Badge className={`mt-2 ${getTypeColor(activity.type)}`}>
+                        {activity.type}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                selectedDate ? (
-                  <div className="space-y-4">
-                    {getAllActivitiesForDate(selectedDate).length > 0 ? (
-                      getAllActivitiesForDate(selectedDate).map((activity) => (
-                        <div
-                          key={activity.id}
-                          className="border rounded-lg p-4 space-y-2 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-semibold text-lg">
-                                {activity.time}
-                              </div>
-                              <div className="text-primary-600 font-medium">
-                                {activity.title}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Badge
-                                variant="outline"
-                                className="capitalize"
-                              >
-                                {activity.type}
-                              </Badge>
-                              <Badge
-                                variant={
-                                  activity.status === 'completed' ? 'secondary' :
-                                    activity.status === 'cancelled' ? 'destructive' :
-                                      'default'
-                                }
-                                className="capitalize"
-                              >
-                                {activity.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          {activity.description && (
-                            <div className="text-sm text-muted-foreground mt-2 bg-muted/50 p-2 rounded">
-                              {activity.description}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-muted-foreground py-6">
-                        No activities scheduled for this date
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-6">
-                    Select a date to view scheduled activities
-                  </div>
-                )
+                <div className="text-center text-muted-foreground py-6">
+                  Select a date to view scheduled activities
+                </div>
               )}
             </CardContent>
           </Card>
