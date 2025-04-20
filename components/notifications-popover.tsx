@@ -83,11 +83,16 @@ export function NotificationsPopover() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent 
+        className="w-full sm:w-80 p-0" 
+        align="end" 
+        sideOffset={8}
+        alignOffset={0}
+      >
         <div className="p-4 border-b">
           <h4 className="text-sm font-semibold">Notifications</h4>
         </div>
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[300px] sm:h-[400px]">
           <AnimatePresence mode="popLayout">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500">
@@ -102,7 +107,7 @@ export function NotificationsPopover() {
                   exit={{ opacity: 0, x: -100 }}
                   className="p-4 border-b last:border-0"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
                     <div className="flex-1 space-y-1">
                       <p className="text-sm">{notification.message}</p>
                       <p className="text-xs text-gray-500">
@@ -113,7 +118,7 @@ export function NotificationsPopover() {
                       variant="ghost"
                       size="sm"
                       onClick={() => markAsRead(notification._id)}
-                      className="text-xs"
+                      className="text-xs self-end sm:self-start whitespace-nowrap"
                     >
                       Mark as read
                     </Button>

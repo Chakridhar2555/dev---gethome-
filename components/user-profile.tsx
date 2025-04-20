@@ -49,13 +49,22 @@ export function UserProfile({ user, onUpdateAvatar, className }: UserProfileProp
             <AvatarImage src={user.avatar} alt={user.name} />
             <AvatarFallback>{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
-          <div className="text-left">
+          <div className="hidden sm:block text-left">
             <p className="text-sm font-medium text-gray-800">{user.name}</p>
             <p className="text-xs text-gray-500">{user.role}</p>
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-56 bg-white border-gray-200"
+        sideOffset={8}
+      >
+        <div className="sm:hidden px-2 py-2">
+          <p className="text-sm font-medium text-gray-800">{user.name}</p>
+          <p className="text-xs text-gray-500">{user.role}</p>
+        </div>
+        <DropdownMenuSeparator className="sm:hidden bg-gray-200" />
         <DropdownMenuLabel className="text-gray-800">My Account</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-200" />
         <DropdownMenuItem 

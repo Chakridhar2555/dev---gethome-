@@ -64,6 +64,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -179,8 +180,20 @@ export default function UserLayout({ children }: UserLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
       <div className="flex">
+        {/* Mobile Sidebar Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-50 lg:hidden"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          <MenuIcon className="h-6 w-6" />
+        </Button>
+
         {/* Sidebar */}
-        <aside className="fixed inset-y-0 z-50 flex w-72 flex-col">
+        <aside className={`fixed inset-y-0 z-50 flex w-72 flex-col transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
           <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-50 px-6 border-r">
             <div className="flex h-16 shrink-0 items-center">
               <Link href="/user/dashboard" className="flex items-center">
@@ -205,6 +218,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
                                 ? "bg-gray-200 text-red-500"
                                 : "text-gray-600 hover:text-red-500 hover:bg-gray-100"
                             )}
+                            onClick={() => setIsSidebarOpen(false)}
                           >
                             <item.icon
                               className={cn(
@@ -235,12 +249,20 @@ export default function UserLayout({ children }: UserLayoutProps) {
           </div>
         </aside>
 
+        {/* Overlay for mobile */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Main content */}
-        <main className="pl-72 w-full min-h-screen bg-white">
+        <main className="flex-1 pl-0 lg:pl-72 w-full min-h-screen bg-white">
           <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
             {/* Left side */}
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-800">
+              <h1 className="text-xl font-semibold text-gray-800 ml-12 lg:ml-0">
                 {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
               </h1>
             </div>
@@ -253,7 +275,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
           </div>
 
           {/* Page content */}
-          <div className="py-4">
+          <div className="p-4 sm:p-6 lg:p-8">
             {children}
           </div>
         </main>
