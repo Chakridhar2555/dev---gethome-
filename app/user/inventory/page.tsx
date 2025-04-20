@@ -485,7 +485,17 @@ export default function InventoryPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-gray-300">
-                      {format(new Date(item.lastUpdated), "MMM dd, yyyy")}
+                      {item.lastUpdated ? (
+                        (() => {
+                          try {
+                            return format(new Date(item.lastUpdated), "MMM dd, yyyy")
+                          } catch (error) {
+                            return "Invalid date"
+                          }
+                        })()
+                      ) : (
+                        "Not available"
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

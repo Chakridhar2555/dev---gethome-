@@ -50,25 +50,25 @@ export function UserProfile({ user, onUpdateAvatar, className }: UserProfileProp
             <AvatarFallback>{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="text-left">
-            <p className="text-sm font-medium text-gray-100">{user.name}</p>
-            <p className="text-xs text-gray-400">{user.role}</p>
+            <p className="text-sm font-medium text-gray-800">{user.name}</p>
+            <p className="text-xs text-gray-500">{user.role}</p>
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-gray-800 border-gray-700">
-        <DropdownMenuLabel className="text-gray-100">My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-gray-700" />
+      <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200">
+        <DropdownMenuLabel className="text-gray-800">My Account</DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-gray-200" />
         <DropdownMenuItem 
           onClick={() => router.push('/settings/profile')}
-          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+          className="text-gray-800 focus:bg-gray-100 focus:text-gray-800"
         >
           <Settings className="mr-2 h-4 w-4" />
           Profile Settings
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-gray-700" />
+        <DropdownMenuSeparator className="bg-gray-200" />
         <DropdownMenuItem 
           onClick={handleLogout} 
-          className="text-red-400 focus:text-red-400 focus:bg-gray-700"
+          className="text-red-500 focus:text-red-500 focus:bg-gray-100"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Logout

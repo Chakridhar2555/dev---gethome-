@@ -15,8 +15,6 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { dataService, type SearchResult } from '@/lib/data-service';
 import { motion } from "framer-motion";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { ThemeProvider } from "@/components/theme-provider";
 import {
   LayoutDashboard,
   Users,
@@ -179,15 +177,15 @@ export default function UserLayout({ children }: UserLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-white">
       <div className="flex">
         {/* Sidebar */}
         <aside className="fixed inset-y-0 z-50 flex w-72 flex-col">
-          <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-800 px-6">
+          <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-50 px-6 border-r">
             <div className="flex h-16 shrink-0 items-center">
               <Link href="/user/dashboard" className="flex items-center">
                 <span className="text-2xl font-bold text-red-500">GetHome</span>
-                <span className="ml-2 text-xl font-semibold text-gray-200">Realty</span>
+                <span className="ml-2 text-xl font-semibold text-gray-800">Realty</span>
               </Link>
             </div>
             <nav className="flex flex-1 flex-col">
@@ -204,14 +202,14 @@ export default function UserLayout({ children }: UserLayoutProps) {
                             className={cn(
                               "group flex gap-x-3 rounded-md p-2 text-sm leading-6",
                               isActive
-                                ? "bg-gray-700 text-red-500"
-                                : "text-gray-400 hover:text-red-500 hover:bg-gray-700"
+                                ? "bg-gray-200 text-red-500"
+                                : "text-gray-600 hover:text-red-500 hover:bg-gray-100"
                             )}
                           >
                             <item.icon
                               className={cn(
                                 "h-6 w-6 shrink-0",
-                                isActive ? "text-red-500" : "text-gray-400 group-hover:text-red-500"
+                                isActive ? "text-red-500" : "text-gray-500 group-hover:text-red-500"
                               )}
                               aria-hidden="true"
                             />
@@ -225,7 +223,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
                 <li className="mt-auto">
                   <Button
                     variant="ghost"
-                    className="w-full justify-start gap-x-3 text-gray-400 hover:text-red-500 hover:bg-gray-700"
+                    className="w-full justify-start gap-x-3 text-gray-600 hover:text-red-500 hover:bg-gray-100"
                     onClick={handleLogout}
                   >
                     <LogOut className="h-6 w-6 shrink-0" />
@@ -238,11 +236,11 @@ export default function UserLayout({ children }: UserLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="pl-72 w-full min-h-screen bg-gray-900">
-          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-gray-700 bg-gray-800 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        <main className="pl-72 w-full min-h-screen bg-white">
+          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
             {/* Left side */}
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-100">
+              <h1 className="text-xl font-semibold text-gray-800">
                 {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
               </h1>
             </div>

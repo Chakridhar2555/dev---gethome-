@@ -15,7 +15,7 @@ import { CallHistory } from "@/components/call-history"
 import { ShowingCalendar } from "@/components/showing-calendar"
 import { TaskManager } from "@/components/task-manager"
 import type { Lead, Task, Showing } from "@/lib/types"
-import { formatDate, format } from "@/lib/utils"
+import { formatDate } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface ExtendedLead extends Lead {
