@@ -284,38 +284,63 @@ export default function LeadsPage() {
         ...formData,
         property: typeof formData.property === 'string' ? formData.property : "",
         location: formData.location || "",
-        leadSource: formData.leadSource || "google ads"
+        leadSource: formData.leadSource || "google ads",
+        leadStatus: formData.leadStatus || "hot"
       };
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          date: new Date().toISOString()
-        }),
-      });
+
+      let response;
+      if (editingLead) {
+        // Update existing lead
+        response = await fetch(`/api/leads/${editingLead._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+      } else {
+        // Create new lead
+        response = await fetch('/api/leads', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...data,
+            date: new Date().toISOString()
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create lead');
+        throw new Error(errorData.error || 'Failed to save lead');
       }
 
-      const newLead = await response.json();
-      setLeads(prev => [...prev, newLead]);
+      const result = await response.json();
+      
+      if (editingLead) {
+        setLeads(prev => prev.map(lead => 
+          lead._id === editingLead._id ? result : lead
+        ));
+      } else {
+        setLeads(prev => [...prev, result.lead]);
+      }
+      
       setIsNewLeadDialogOpen(false);
       setFormData(defaultFormData);
+      setEditingLead(null);
+      
       toast({
         title: "Success",
-        description: "Lead created successfully",
+        description: `Lead ${editingLead ? 'updated' : 'created'} successfully`,
       });
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create lead",
+        description: error instanceof Error ? error.message : "Failed to save lead",
       });
     } finally {
       setIsSubmitting(false);
@@ -380,11 +405,17 @@ export default function LeadsPage() {
 
   const filteredLeads = leads.filter((lead) => {
     const query = searchQuery.toLowerCase();
+    
+    // Safely handle potentially undefined values
+    const nameSearch = lead.name ? lead.name.toLowerCase().includes(query) : false;
+    const emailSearch = lead.email ? lead.email.toLowerCase().includes(query) : false;
+    const phoneSearch = lead.phone ? lead.phone.toLowerCase().includes(query) : false;
     const propertySearch = lead.property ? lead.property.toLowerCase().includes(query) : false;
+    
     const matchesSearch =
-      lead.name.toLowerCase().includes(query) ||
-      lead.email.toLowerCase().includes(query) ||
-      lead.phone.toLowerCase().includes(query) ||
+      nameSearch ||
+      emailSearch ||
+      phoneSearch ||
       propertySearch;
 
     const matchesFilters =

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import bcrypt from 'bcryptjs';
+import { getRolePermissions } from "@/lib/role-permissions";
 
 const defaultPermissions = {
   dashboard: false,
@@ -150,32 +151,12 @@ export async function PUT(request: Request) {
       if (updateData.role === "admin" || updateData.role === "administrator") {
         updateData.role = "Administrator";
         // Set admin permissions - always full permissions for admin
-        updateData.permissions = {
-          dashboard: true,
-          leads: true,
-          calendar: true,
-          email: true,
-          settings: true,
-          inventory: true,
-          favorites: true,
-          mls: true
-        };
+        updateData.permissions = getRolePermissions("Administrator");
         console.log("Updated to admin role:", { role: updateData.role, permissions: updateData.permissions });
       } else {
         updateData.role = updateData.role.charAt(0).toUpperCase() + updateData.role.slice(1); // Capitalize first letter
-        // Keep existing permissions if not explicitly provided in update
-        if (updateData.permissions) {
-          updateData.permissions = {
-            dashboard: updateData.permissions.dashboard ?? existingUser.permissions?.dashboard ?? defaultPermissions.dashboard,
-            leads: updateData.permissions.leads ?? existingUser.permissions?.leads ?? defaultPermissions.leads,
-            calendar: updateData.permissions.calendar ?? existingUser.permissions?.calendar ?? defaultPermissions.calendar,
-            email: updateData.permissions.email ?? existingUser.permissions?.email ?? defaultPermissions.email,
-            settings: updateData.permissions.settings ?? existingUser.permissions?.settings ?? defaultPermissions.settings,
-            inventory: updateData.permissions.inventory ?? existingUser.permissions?.inventory ?? defaultPermissions.inventory,
-            favorites: updateData.permissions.favorites ?? existingUser.permissions?.favorites ?? defaultPermissions.favorites,
-            mls: updateData.permissions.mls ?? existingUser.permissions?.mls ?? defaultPermissions.mls
-          };
-        }
+        // Set role-based permissions
+        updateData.permissions = getRolePermissions(updateData.role);
       }
     } else if (updateData.permissions) {
       // Handle permission updates without role change

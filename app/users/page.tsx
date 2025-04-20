@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { getRolePermissions } from "@/lib/role-permissions"
 
 interface User {
   _id: string;
@@ -421,7 +422,7 @@ export default function UsersPage() {
               <div className="space-y-2">
                 <Label>Permissions</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(formData.permissions).map(([key, value]) => (
+                  {Object.entries(getRolePermissions(formData.role)).map(([key, value]) => (
                     <div key={key} className="flex items-center space-x-2">
                       <Checkbox
                         id={key}

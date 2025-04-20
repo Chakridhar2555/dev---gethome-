@@ -123,9 +123,9 @@ export async function PUT(
       }
     }
 
-    // Update using the name as a reference
+    // Update using the lead ID
     const result = await db.collection<Lead>("leads").findOneAndUpdate(
-      { name: lead.name },
+      query,
       { $set: updateData },
       { 
         returnDocument: "after"
@@ -133,7 +133,7 @@ export async function PUT(
     )
 
     if (!result) {
-      console.error('Failed to update lead with name:', lead.name)
+      console.error('Failed to update lead with ID:', params.leadId)
       return NextResponse.json(
         { error: "Failed to update lead" },
         { status: 500 }

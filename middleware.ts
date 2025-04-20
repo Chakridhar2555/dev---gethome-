@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { hasModulePermission } from '@/lib/role-permissions'
 
 // Define route permissions mapping
 const ROUTE_PERMISSIONS: Record<string, string> = {
@@ -16,18 +17,7 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
 
 // Check if user has permission for a specific module
 const hasPermission = (user: any, module: string): boolean => {
-  // If user is admin, always grant permission
-  if (user?.role === 'Administrator' || user?.role === 'admin') {
-    return true
-  }
-  
-  // If permissions object doesn't exist, default to false
-  if (!user?.permissions) {
-    return false
-  }
-  
-  // Check the specific module permission
-  return user.permissions[module] === true
+  return hasModulePermission(user, module)
 }
 
 export function middleware(request: NextRequest) {
