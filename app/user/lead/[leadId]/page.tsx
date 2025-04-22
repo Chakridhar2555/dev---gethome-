@@ -2,27 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
-import { Phone, Mail, MapPin, Calendar, History, FileText, MessageSquare, ArrowLeft, Save, Loader2, DollarSign, User, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Phone, Save, Loader2 } from "lucide-react"
+import { formatDate } from "@/lib/utils"
 import { CallHistory } from "@/components/call-history"
+import { Lead as BaseLeadType, Task, Showing } from "@/lib/types"
 import { ShowingCalendar } from "@/components/showing-calendar"
 import { TaskManager } from "@/components/task-manager"
-import type { Lead, Task, Showing } from "@/lib/types"
-import { formatDate } from "@/lib/utils"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface ExtendedLead extends Lead {
-  source?: string;
-  address?: string;
-  createdAt?: string;
-}
+import type { Showing as ShowingType } from "@/lib/types"
 
 const leadStatuses = [
   { value: 'cold', label: 'Cold' },
@@ -42,7 +34,7 @@ const leadResponses = [
 const leadSources = [
   { value: 'google ads', label: 'Google Ads' },
   { value: 'meta', label: 'Meta' },
-  { value: 'refferal', label: 'Refferal' },
+  { value: 'refferal', label: 'Referral' },
   { value: 'linkedin', label: 'LinkedIn' },
   { value: 'youtube', label: 'YouTube' },
 ];
@@ -62,13 +54,65 @@ const clientTypes = [
   { value: 'commercial buyer', label: 'Commercial Buyer' },
 ];
 
+// Add Call type definition from call-history.tsx
+interface Call {
+  date: string;
+  duration: number;
+  recording?: string;
+}
+
+// Add Task type definition from task-manager.tsx
+interface Task {
+  id: string;
+  title: string;
+  date: Date;
+  description?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+}
+
+// Add PropertyDetails type definition
+interface PropertyDetails {
+  lastClosedDate?: string;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  yearBuilt?: number;
+  lotSize?: string;
+  parking?: string;
+  features?: string[];
+}
+
+// Create a custom Lead type that extends the base Lead type
+type Lead = BaseLeadType & {
+  propertyDetails?: PropertyDetails;
+};
+
+// Component Props
+interface CallHistoryProps {
+  leadId: string;
+}
+
+interface TaskManagerProps {
+  leadId: string;
+}
+
+interface ShowingCalendarProps {
+  leadId: string;
+}
+
 export default function UserLeadDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const [leadData, setLeadData] = useState<ExtendedLead | null>(null)
+  const [leadData, setLeadData] = useState<Lead | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [newNote, setNewNote] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [calls, setCalls] = useState<Call[]>([])
+  const [showings, setShowings] = useState<Showing[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   useEffect(() => {
     fetchLead()
@@ -79,7 +123,15 @@ export default function UserLeadDetailPage() {
       const leadId = params.leadId as string
       if (!leadId) return
 
-      const response = await fetch(`/api/leads/${leadId}`)
+      // Get current user from localStorage
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        router.push('/login');
+        return;
+      }
+      const user = JSON.parse(userData);
+
+      const response = await fetch(`/api/leads/${leadId}?userRole=${user.role}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -95,475 +147,416 @@ export default function UserLeadDetailPage() {
         title: "Error",
         description: "Failed to fetch lead details",
       })
-      router.push("/user/leads")
+      router.push('/user/leads')
     }
   }
+
+  const handleSubmit = async () => {
+    if (!leadData) return;
+    
+    setIsSaving(true)
+    try {
+      const response = await fetch(`/api/leads/${params.leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(leadData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update lead');
+      }
+
+      const updatedLead = await response.json();
+      setLeadData(updatedLead);
+      
+      toast({
+        title: "Success",
+        description: "Lead updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update lead"
+      });
+    } finally {
+      setIsSaving(false)
+    }
+  };
 
   const handleCall = async () => {
-    if (!leadData) return
-    
-    try {
-      const response = await fetch("/api/call", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          leadId: leadData._id,
-          phoneNumber: leadData.phone 
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to initiate call")
-      }
-
-      toast({
-        title: "Call Initiated",
-        description: "Connecting your call...",
-      })
-      
-      fetchLead()
-    } catch (error) {
+    if (!leadData?.phone) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to initiate call",
-      })
-    }
-  }
-
-  const addNote = async () => {
-    if (!newNote.trim() || !leadData) return
-
-    try {
-      const response = await fetch(`/api/leads/${leadData._id}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: newNote }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to add note")
-      }
-
-      toast({
-        title: "Success",
-        description: "Note added successfully",
-      })
-
-      setNewNote("")
-      fetchLead()
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add note",
-      })
-    }
-  }
-
-  const handleTaskUpdate = async (taskId: string, updates: Partial<{
-    id: string;
-    title: string;
-    date: string | Date;
-    description?: string;
-    status: 'pending' | 'completed' | 'cancelled';
-    priority: 'low' | 'medium' | 'high';
-  }>) => {
-    if (!leadData) return;
-
-    // Convert Date to string if present
-    const processedUpdates = {
-      ...updates,
-      date: updates.date ? (typeof updates.date === 'string' ? updates.date : updates.date.toISOString()) : new Date().toISOString()
-    };
-
-    const updatedTasks = leadData.tasks?.map(task =>
-      task.id === taskId ? { ...task, ...processedUpdates } : task
-    ) || [];
-    
-    // Ensure all dates are strings and tasks have required fields
-    const normalizedTasks = updatedTasks.map((task: {
-      id: string;
-      title: string;
-      date: string | Date;
-      description?: string;
-      status: 'pending' | 'completed' | 'cancelled';
-      priority: 'low' | 'medium' | 'high';
-    }) => ({
-      id: task.id,
-      title: task.title,
-      date: typeof task.date === 'string' ? task.date : (task.date as Date).toISOString(),
-      description: task.description,
-      status: task.status || 'pending',
-      priority: task.priority || 'medium'
-    }));
-
-    const updatedData = {
-      ...leadData,
-      tasks: normalizedTasks
-    } as Lead;
-    setLeadData(updatedData);
-
-    try {
-      const response = await fetch(`/api/leads/${params.leadId}/tasks`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tasks: normalizedTasks })
+        description: "No phone number available"
       });
+      return;
+    }
 
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
-
-      // Trigger a refresh of the leads list to update metrics
-      window.dispatchEvent(new Event('storage'));
-
-      toast({
-        title: "Success",
-        description: "Task updated successfully",
-      });
+    try {
+      window.location.href = `tel:${leadData.phone}`;
     } catch (error) {
+      console.error('Error making call:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update task",
+        description: "Failed to initiate call"
       });
     }
   };
 
   if (isLoading || !leadData) {
     return (
-      <div className="p-6 animate-pulse">
-        <div className="h-8 w-48 bg-gray-800 rounded mb-6"></div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-800 rounded"></div>
-          ))}
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">Loading lead details...</h2>
+          <p className="text-gray-500">Please wait while we fetch the information.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">{leadData.name}</h1>
-          <p className="text-gray-400">{leadData.email}</p>
-        </div>
-        <div className="flex gap-2">
+    <div className="space-y-4 p-8">
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/user/leads')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Leads
+        </Button>
+        <div className="flex items-center space-x-4">
           <Button
-            variant="outline"
-            onClick={() => router.push("/user/leads")}
-            className="border-gray-600 hover:bg-gray-700"
+            onClick={handleCall}
+            className="bg-blue-500 hover:bg-blue-600 text-white"
           >
-            Back to Leads
-          </Button>
-          <Button onClick={handleCall} className="bg-red-500 hover:bg-red-600">
-            <Phone className="h-4 w-4 mr-2" />
+            <Phone className="mr-2 h-4 w-4" />
             Call Lead
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="bg-red-500 hover:bg-red-600 text-white"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="space-y-4">
-        <TabsList className="bg-gray-800 border-gray-700">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="showings">Showings</TabsTrigger>
-          <TabsTrigger value="history">Call History</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Lead Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Lead Status</Label>
-                  <Select
-                    value={leadData.leadStatus}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadStatus: value as Lead['leadStatus'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadStatuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Lead Response</Label>
-                  <Select
-                    value={leadData.leadResponse}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadResponse: value as Lead['leadResponse'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead response" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadResponses.map((response) => (
-                        <SelectItem key={response.value} value={response.value}>
-                          {response.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Lead Source</Label>
-                  <Select
-                    value={leadData.leadSource}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadSource: value as Lead['leadSource'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadSources.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Lead Type</Label>
-                  <Select
-                    value={leadData.leadType}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadType: value as Lead['leadType'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Client Type</Label>
-                  <Select
-                    value={leadData.clientType}
-                    onValueChange={(value) => setLeadData({ ...leadData, clientType: value as Lead['clientType'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Source</Label>
-                  <div className="text-gray-100">{leadData.source || 'N/A'}</div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Phone</Label>
-                  <div className="text-gray-100">{leadData.phone}</div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Email</Label>
-                  <div className="text-gray-100">{leadData.email}</div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Address</Label>
-                  <div className="text-gray-100">{leadData.address || 'N/A'}</div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Created</Label>
-                  <div className="text-gray-100">
-                    {leadData.createdAt ? formatDate(leadData.createdAt) : formatDate(leadData.date)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tasks">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Tasks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TaskManager
-                tasks={leadData.tasks || []}
-                onUpdateTask={handleTaskUpdate}
-                onAddTask={async (task: {
-                  id: string;
-                  title: string;
-                  date: string | Date;
-                  description?: string;
-                  status: 'pending' | 'completed' | 'cancelled';
-                  priority: 'low' | 'medium' | 'high';
-                }) => {
-                  if (!leadData) return;
-                  const normalizedTask = {
-                    ...task,
-                    date: typeof task.date === 'string' ? task.date : task.date.toISOString()
-                  };
-                  const updatedTasks = [...(leadData.tasks || []), normalizedTask];
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/tasks`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(normalizedTask),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to add task");
-                    }
-
-                    setLeadData({ ...leadData, tasks: updatedTasks });
-                    toast({
-                      title: "Success",
-                      description: "Task added successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to add task",
-                    });
-                  }
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="showings">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Property Showings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ShowingCalendar
-                showings={leadData.showings || []}
-                onAddShowing={async (showing) => {
-                  if (!leadData) return;
-                  const updatedShowings = [...(leadData.showings || []), showing];
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/showings`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(showing),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to add showing");
-                    }
-
-                    await fetchLead();
-                    toast({
-                      title: "Success",
-                      description: "Showing added successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to add showing",
-                    });
-                  }
-                }}
-                onUpdateShowing={async (showingId, updates) => {
-                  if (!leadData) return;
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/showings/${showingId}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(updates),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to update showing");
-                    }
-
-                    await fetchLead();
-                    toast({
-                      title: "Success",
-                      description: "Showing updated successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to update showing",
-                    });
-                  }
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Call History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CallHistory calls={leadData.callHistory || []} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notes">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Lead Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4">
+              {/* Basic Information */}
+              <div className="space-y-2">
+                <Label>Name</Label>
                 <Input
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add a note..."
-                  className="bg-gray-700 border-gray-600"
+                  value={leadData.name}
+                  onChange={(e) => setLeadData({ ...leadData, name: e.target.value })}
                 />
-                <Button onClick={addNote} className="bg-red-500 hover:bg-red-600">
-                  Add Note
-                </Button>
               </div>
-              <div className="space-y-4">
-                {leadData.notes && leadData.notes.split('\n').map((note, index) => (
-                  <div key={index} className="p-3 bg-gray-700 rounded-lg text-gray-100">
-                    {note}
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={leadData.email}
+                  onChange={(e) => setLeadData({ ...leadData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={leadData.phone}
+                  onChange={(e) => setLeadData({ ...leadData, phone: e.target.value })}
+                />
+              </div>
+
+              {/* Location & Property */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-lg font-medium mb-4">Location & Property</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input
+                      value={leadData.location || ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        location: e.target.value
+                      })}
+                    />
                   </div>
-                ))}
-                {!leadData.notes && (
-                  <p className="text-center text-gray-500">No notes available</p>
-                )}
+                  <div className="space-y-2">
+                    <Label>Property</Label>
+                    <Input
+                      value={leadData.property || ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        property: e.target.value
+                      })}
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Lead Status and Type */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-lg font-medium mb-4">Lead Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Lead Status</Label>
+                    <Select
+                      value={leadData.leadStatus || ''}
+                      onValueChange={(value) => setLeadData({
+                        ...leadData,
+                        leadStatus: value as BaseLeadType['leadStatus']
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lead status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leadStatuses.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Lead Response</Label>
+                    <Select
+                      value={leadData.leadResponse || ''}
+                      onValueChange={(value) => setLeadData({
+                        ...leadData,
+                        leadResponse: value as BaseLeadType['leadResponse']
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lead response" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leadResponses.map((response) => (
+                          <SelectItem key={response.value} value={response.value}>
+                            {response.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Lead Source</Label>
+                    <Select
+                      value={leadData.leadSource || ''}
+                      onValueChange={(value) => setLeadData({
+                        ...leadData,
+                        leadSource: value as BaseLeadType['leadSource']
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lead source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leadSources.map((source) => (
+                          <SelectItem key={source.value} value={source.value}>
+                            {source.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Lead Type</Label>
+                    <Select
+                      value={leadData.leadType || ''}
+                      onValueChange={(value) => setLeadData({
+                        ...leadData,
+                        leadType: value as BaseLeadType['leadType']
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lead type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leadTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Client Type</Label>
+                    <Select
+                      value={leadData.clientType || ''}
+                      onValueChange={(value) => setLeadData({
+                        ...leadData,
+                        clientType: value as BaseLeadType['clientType']
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-lg font-medium mb-4">Property Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Property Type</Label>
+                    <Input
+                      value={leadData.propertyDetails?.propertyType ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          propertyType: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bedrooms</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.bedrooms ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          bedrooms: parseInt(e.target.value) || 0
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bathrooms</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.bathrooms ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          bathrooms: parseInt(e.target.value) || 0
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Square Footage</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.squareFootage ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          squareFootage: parseInt(e.target.value) || 0
+                        }
+                      })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Call History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CallHistory calls={calls} />
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TaskManager 
+                tasks={tasks}
+                onAddTask={(task: Task) => {
+                  // Handle adding task
+                  toast({
+                    title: "Task added",
+                    description: "The task has been added successfully."
+                  });
+                }}
+                onUpdateTask={(taskId: string, updates: Partial<Task>) => {
+                  // Handle updating task
+                  toast({
+                    title: "Task updated",
+                    description: "The task has been updated successfully."
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Showings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ShowingCalendar 
+                showings={showings}
+                onAddShowing={async (showing: ShowingType) => {
+                  // Handle adding showing
+                  toast({
+                    title: "Showing scheduled",
+                    description: "The showing has been scheduled successfully."
+                  });
+                }}
+                onUpdateShowing={async (showingId: string, updates: Partial<ShowingType>) => {
+                  // Handle updating showing
+                  toast({
+                    title: "Showing updated",
+                    description: "The showing has been updated successfully."
+                  });
+                }}
+                onDateSelect={(date) => setSelectedDate(date || new Date())}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
-  )
+  );
 } 

@@ -24,23 +24,29 @@ export interface User {
 }
 
 export interface Showing {
-  id: string
-  date: Date
-  time: string
-  property: string
-  notes?: string
-  status: 'scheduled' | 'completed' | 'cancelled'
-  leadName?: string
-  leadId?: string
+  id: string;
+  date: Date;
+  time: string;
+  property: string;
+  notes?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  leadName?: string;
+  leadId?: string;
 }
 
 export interface Task {
   id: string;
   title: string;
-  date: string;  // ISO date string format
-  description?: string;
+  date: string;
+  description: string;
   status: 'pending' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
+}
+
+export interface Call {
+  date: string;
+  duration: number;
+  recording?: string;
 }
 
 export interface CallHistory {
@@ -114,4 +120,51 @@ export interface Lead {
   propertyPreferences?: PropertyPreferences;
   updatedAt?: string;
   createdAt?: string;
+}
+
+export interface Property {
+  id: string;
+  propertyName: string;
+  propertyType: 'house' | 'apartment' | 'condo' | 'land' | 'commercial';
+  address: string;
+  price: string;
+  squareFootage: string;
+  bedrooms: string;
+  bathrooms: string;
+  yearBuilt: string;
+  description: string;
+  features: string;
+  status: 'available' | 'pending' | 'sold';
+  mainImage?: string;
+  images: string[];
+  image360: string[];
+  isFavorite?: boolean;
+}
+
+export interface PropertyDetails {
+  lastClosedDate: string;
+  propertyType: string;
+  bedrooms: number;
+  bathrooms: number;
+  squareFootage: number;
+  yearBuilt: number;
+  lotSize: string;
+  parking: string;
+  features: string[];
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: Date;
+  time: string;
+  type: 'viewing' | 'meeting' | 'open-house' | 'follow-up' | 'call';
+  description: string;
+  location?: string;
+  attendees?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  propertyDetails?: string;
+  notes?: string;
+  enableReminder?: boolean;
 } 
