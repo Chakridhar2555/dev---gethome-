@@ -567,10 +567,10 @@ export default function LeadsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <Card className="bg-gray-800 border-gray-700">
+      <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-gray-100">Lead Management</CardTitle>
+            <CardTitle>Lead Management</CardTitle>
           </div>
           
           {/* Lead Status Filters */}
@@ -581,7 +581,7 @@ export default function LeadsPage() {
                 variant={selectedStatus === status ? "default" : "outline"}
                 className={selectedStatus === status 
                   ? "bg-red-500 hover:bg-red-600 text-white" 
-                  : "text-gray-300 hover:bg-gray-700 border-gray-600"}
+                  : "text-gray-700 hover:bg-gray-50"}
                 onClick={() => setSelectedStatus(status)}
               >
                 {status}
@@ -597,7 +597,7 @@ export default function LeadsPage() {
                 variant={selectedLocation === location ? "default" : "outline"}
                 className={selectedLocation === location 
                   ? "bg-red-500 hover:bg-red-600 text-white" 
-                  : "text-gray-300 hover:bg-gray-700 border-gray-600"}
+                  : "text-gray-700 hover:bg-gray-50"}
                 onClick={() => setSelectedLocation(location)}
               >
                 {location}
@@ -608,18 +608,18 @@ export default function LeadsPage() {
           {/* Search and Additional Filters */}
           <div className="flex items-center gap-2 mt-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 bg-gray-700 border-gray-600 text-gray-100"
+                className="pl-8"
               />
             </div>
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="border-gray-600 hover:bg-gray-700 text-gray-300"
+              className="text-gray-700 hover:bg-gray-50"
             >
               <Filter className="h-4 w-4 mr-2" />
               {showFilters ? 'Hide Filters' : 'Show Filters'}
@@ -629,18 +629,18 @@ export default function LeadsPage() {
 
         {/* Additional Filters Panel */}
         {showFilters && (
-          <div className="p-4 border-t border-gray-700 bg-gray-800">
+          <div className="p-4 border-t bg-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-gray-100">Lead Type</Label>
+                <Label>Lead Type</Label>
                 <Select
                   value={filters.leadType}
                   onValueChange={(value) => setFilters({ ...filters, leadType: value === "all" ? "" : value })}
                 >
-                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {leadTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
@@ -652,15 +652,15 @@ export default function LeadsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-gray-100">Lead Source</Label>
+                <Label>Lead Source</Label>
                 <Select
                   value={filters.leadSource}
                   onValueChange={(value) => setFilters({ ...filters, leadSource: value === "all" ? "" : value })}
                 >
-                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {leadSources.map((source) => (
                       <SelectItem key={source.value} value={source.value}>
@@ -672,15 +672,15 @@ export default function LeadsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-gray-100">Client Type</Label>
+                <Label>Client Type</Label>
                 <Select
                   value={filters.clientType}
                   onValueChange={(value) => setFilters({ ...filters, clientType: value === "all" ? "" : value })}
                 >
-                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select client type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {clientTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
@@ -706,7 +706,7 @@ export default function LeadsPage() {
                   setSelectedLocation("All Locations");
                   setSelectedStatus("All Leads");
                 }}
-                className="border-gray-600 hover:bg-gray-700 text-gray-300"
+                className="text-gray-700 hover:bg-gray-50"
               >
                 Reset All Filters
               </Button>
@@ -714,23 +714,23 @@ export default function LeadsPage() {
           </div>
         )}
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="mt-4">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="text-gray-100">All Leads</CardTitle>
+              <CardTitle>All Leads</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow className="border-gray-700">
-                  <TableHead className="text-gray-400">Name</TableHead>
-                  <TableHead className="text-gray-400">Contact</TableHead>
-                  <TableHead className="text-gray-400">Status</TableHead>
-                  <TableHead className="text-gray-400">Type</TableHead>
-                  <TableHead className="text-gray-400">Source</TableHead>
-                  <TableHead className="text-gray-400">Created</TableHead>
-                  <TableHead className="text-gray-400 text-right">Actions</TableHead>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -742,7 +742,7 @@ export default function LeadsPage() {
                   >
                     <TableCell
                       colSpan={7}
-                      className="text-center text-gray-400 py-4"
+                      className="text-center text-gray-500 py-4"
                     >
                       No leads found
                     </TableCell>
@@ -751,33 +751,32 @@ export default function LeadsPage() {
                   filteredLeads.map((lead, index) => (
                     <MotionTableRow
                       key={lead._id}
-                      className="border-gray-700"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
                       whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
                     >
-                      <TableCell className="font-medium text-gray-100">
+                      <TableCell className="font-medium">
                         <Button
                           variant="link"
-                          className="p-0 h-auto font-medium text-gray-100 hover:text-gray-300"
+                          className="p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
                           onClick={() => router.push(`/user/lead/${lead._id}`)}
                         >
                           {lead.name}
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1 text-gray-300">
+                        <div className="space-y-1 text-gray-600">
                           <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                            <Phone className="h-4 w-4 mr-2 text-gray-500" />
                             {lead.phone}
                           </div>
                           <div className="flex items-center">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                            <Mail className="h-4 w-4 mr-2 text-gray-500" />
                             {lead.email}
                           </div>
                           <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                            <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                             {lead.location || 'No location'}
                           </div>
                         </div>
@@ -792,8 +791,8 @@ export default function LeadsPage() {
                           {(lead.leadType || 'buyer').charAt(0).toUpperCase() + (lead.leadType || 'buyer').slice(1)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-300">{lead.leadSource || 'Unknown'}</TableCell>
-                      <TableCell className="text-gray-300">
+                      <TableCell className="text-gray-600">{lead.leadSource || 'Unknown'}</TableCell>
+                      <TableCell className="text-gray-600">
                         {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : 'Unknown'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -804,7 +803,7 @@ export default function LeadsPage() {
                             onClick={() => router.push(`/user/lead/${lead._id}`)}
                             className="h-8 w-8 p-0"
                           >
-                            <Eye className="h-4 w-4 text-gray-400" />
+                            <Eye className="h-4 w-4 text-gray-500" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -812,13 +811,13 @@ export default function LeadsPage() {
                             onClick={() => handleEdit(lead)}
                             className="h-8 w-8 p-0"
                           >
-                            <Edit2 className="h-4 w-4 text-gray-400" />
+                            <Edit2 className="h-4 w-4 text-gray-500" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setLeadToDelete(lead)}
-                            className="h-8 w-8 p-0 hover:text-red-400"
+                            className="h-8 w-8 p-0 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -833,7 +832,7 @@ export default function LeadsPage() {
         </Card>
 
         <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
-          <DialogContent className="bg-gray-800 text-gray-100 max-w-4xl w-[90vw]">
+          <DialogContent className="max-w-4xl w-[90vw]">
             <DialogHeader>
               <DialogTitle>
                 {editingLead ? "Edit Lead" : "Add New Lead"}
@@ -848,7 +847,6 @@ export default function LeadsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -859,7 +857,6 @@ export default function LeadsPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -869,7 +866,6 @@ export default function LeadsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -881,7 +877,6 @@ export default function LeadsPage() {
                       ...formData,
                       location: e.target.value
                     })}
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -894,7 +889,6 @@ export default function LeadsPage() {
                       property: e.target.value
                     })}
                     required
-                    className="bg-gray-700 border-gray-600"
                     placeholder="Enter property details"
                   />
                 </div>
@@ -904,10 +898,10 @@ export default function LeadsPage() {
                     value={formData.leadStatus || "hot"}
                     onValueChange={(value: string) => setFormData({ ...formData, leadStatus: value as LeadStatus })}
                   >
-                    <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent>
                       {leadStatuses.map((status) => (
                         <SelectItem key={status.value} value={status.value}>
                           {status.label}
@@ -922,10 +916,10 @@ export default function LeadsPage() {
                     value={formData.leadSource || "google ads"}
                     onValueChange={(value: string) => setFormData({ ...formData, leadSource: value as LeadSource })}
                   >
-                    <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent>
                       {leadSources.map((source) => (
                         <SelectItem key={source.value} value={source.value}>
                           {source.label}
@@ -940,10 +934,10 @@ export default function LeadsPage() {
                     value={formData.leadType}
                     onValueChange={(value) => setFormData({ ...formData, leadType: value as Lead['leadType'] })}
                   >
-                    <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select lead type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent>
                       {leadTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
@@ -959,7 +953,6 @@ export default function LeadsPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="bg-gray-700 border-gray-600"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -970,7 +963,6 @@ export default function LeadsPage() {
                     type="number"
                     value={formData.age || ""}
                     onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || undefined })}
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -982,10 +974,10 @@ export default function LeadsPage() {
                       gender: value as Lead['gender']
                     })}
                   >
-                    <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent>
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
@@ -999,7 +991,6 @@ export default function LeadsPage() {
                     id="language"
                     value={formData.language || ""}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1008,14 +999,13 @@ export default function LeadsPage() {
                     id="religion"
                     value={formData.religion || ""}
                     onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
-                    className="bg-gray-700 border-gray-600"
                   />
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowSalesInfo(!showSalesInfo)}>
-                  <h3 className="text-lg font-medium text-gray-100">Sales Information</h3>
-                  {showSalesInfo ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+                  <h3 className="text-lg font-medium">Sales Information</h3>
+                  {showSalesInfo ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
                 </div>
                 {showSalesInfo && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1025,7 +1015,6 @@ export default function LeadsPage() {
                         id="realtorAssociation"
                         value={formData.realtorAssociation?.name || ''}
                         onChange={(e) => handleRealtorAssociationChange('name', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1034,7 +1023,6 @@ export default function LeadsPage() {
                         id="membershipNumber"
                         value={formData.realtorAssociation?.membershipNumber || ''}
                         onChange={(e) => handleRealtorAssociationChange('membershipNumber', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1044,7 +1032,6 @@ export default function LeadsPage() {
                         type="date"
                         value={formData.realtorAssociation?.joinDate || ''}
                         onChange={(e) => handleRealtorAssociationChange('joinDate', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1054,7 +1041,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.closedSales?.count || 0}
                         onChange={(e) => handleClosedSalesChange('count', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1064,7 +1050,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.closedSales?.totalValue || 0}
                         onChange={(e) => handleClosedSalesChange('totalValue', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1074,7 +1059,6 @@ export default function LeadsPage() {
                         type="date"
                         value={formData.closedSales?.lastClosedDate || ''}
                         onChange={(e) => handleClosedSalesChange('lastClosedDate', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                   </div>
@@ -1082,8 +1066,8 @@ export default function LeadsPage() {
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowPropertyDetails(!showPropertyDetails)}>
-                  <h3 className="text-lg font-medium text-gray-100">Property Details</h3>
-                  {showPropertyDetails ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+                  <h3 className="text-lg font-medium">Property Details</h3>
+                  {showPropertyDetails ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
                 </div>
                 {showPropertyDetails && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1093,7 +1077,6 @@ export default function LeadsPage() {
                         id="propertyType"
                         value={formData.propertyDetails.propertyType}
                         onChange={(e) => handlePropertyDetailsChange('propertyType', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1103,7 +1086,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.propertyDetails.bedrooms}
                         onChange={(e) => handlePropertyDetailsChange('bedrooms', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1113,7 +1095,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.propertyDetails.bathrooms}
                         onChange={(e) => handlePropertyDetailsChange('bathrooms', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1123,7 +1104,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.propertyDetails.squareFootage}
                         onChange={(e) => handlePropertyDetailsChange('squareFootage', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1133,7 +1113,6 @@ export default function LeadsPage() {
                         type="number"
                         value={formData.propertyDetails.yearBuilt}
                         onChange={(e) => handlePropertyDetailsChange('yearBuilt', parseInt(e.target.value) || 0)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1142,7 +1121,6 @@ export default function LeadsPage() {
                         id="lotSize"
                         value={formData.propertyDetails.lotSize}
                         onChange={(e) => handlePropertyDetailsChange('lotSize', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1151,7 +1129,6 @@ export default function LeadsPage() {
                         id="parking"
                         value={formData.propertyDetails.parking}
                         onChange={(e) => handlePropertyDetailsChange('parking', e.target.value)}
-                        className="bg-gray-700 border-gray-600"
                       />
                     </div>
                   </div>
@@ -1165,11 +1142,10 @@ export default function LeadsPage() {
                     setIsNewLeadDialogOpen(false);
                     setEditingLead(null);
                   }}
-                  className="border-gray-600 hover:bg-gray-700"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-red-500 hover:bg-red-600">
+                <Button type="submit" className="bg-red-500 hover:bg-red-600 text-white">
                   {editingLead ? "Update" : "Create"} Lead
                 </Button>
               </div>
@@ -1178,20 +1154,20 @@ export default function LeadsPage() {
         </Dialog>
 
         <AlertDialog open={!!leadToDelete} onOpenChange={() => setLeadToDelete(null)}>
-          <AlertDialogContent className="bg-gray-800 text-gray-100">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-400">
+              <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the lead
                 {leadToDelete && ` "${leadToDelete.name}"`} and remove their data from the system.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="border-gray-600 hover:bg-gray-700">
+              <AlertDialogCancel>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-red-500 hover:bg-red-600 text-white"
                 onClick={() => leadToDelete && handleDelete(leadToDelete)}
               >
                 Delete
