@@ -330,7 +330,7 @@ export default function UserLeadDetailPage() {
         <Button
           onClick={handleSave}
           disabled={isLoading}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
+          className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
         >
           {isLoading ? (
             <>
