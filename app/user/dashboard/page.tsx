@@ -96,56 +96,56 @@ function MetricsCards({ metrics }: { metrics: any }) {
       animate="show"
     >
       <motion.div variants={item}>
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardContent className="flex items-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-400/10 mr-4">
-              <ClipboardList className="w-6 h-6 text-blue-400" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mr-4">
+              <ClipboardList className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-400">Total Tasks</p>
-              <h2 className="text-2xl font-bold text-gray-100">{metrics.totalTasks}</h2>
+              <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+              <h2 className="text-2xl font-bold text-gray-900">{metrics.totalTasks}</h2>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div variants={item}>
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardContent className="flex items-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-400/10 mr-4">
-              <Users className="w-6 h-6 text-green-400" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mr-4">
+              <Users className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-400">Total Leads</p>
-              <h2 className="text-2xl font-bold text-gray-100">{metrics.totalLeads}</h2>
+              <p className="text-sm font-medium text-gray-600">Total Leads</p>
+              <h2 className="text-2xl font-bold text-gray-900">{metrics.totalLeads}</h2>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div variants={item}>
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardContent className="flex items-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-400/10 mr-4">
-              <CalendarIcon className="w-6 h-6 text-yellow-400" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 mr-4">
+              <CalendarIcon className="w-6 h-6 text-yellow-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-400">Today's Tasks</p>
-              <h2 className="text-2xl font-bold text-gray-100">{metrics.todaysTasks}</h2>
+              <p className="text-sm font-medium text-gray-600">Today's Tasks</p>
+              <h2 className="text-2xl font-bold text-gray-900">{metrics.todaysTasks}</h2>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div variants={item}>
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardContent className="flex items-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-400/10 mr-4">
-              <Clock className="w-6 h-6 text-purple-400" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 mr-4">
+              <Clock className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-400">Upcoming Tasks</p>
-              <h2 className="text-2xl font-bold text-gray-100">{metrics.upcomingTasks}</h2>
+              <p className="text-sm font-medium text-gray-600">Upcoming Tasks</p>
+              <h2 className="text-2xl font-bold text-gray-900">{metrics.upcomingTasks}</h2>
             </div>
           </CardContent>
         </Card>
@@ -167,19 +167,19 @@ function TasksTable({ allTasks, getStatusIcon, getPriorityColor }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <Card className="bg-gray-800 border-gray-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-gray-100">All Tasks</CardTitle>
+          <CardTitle>All Tasks</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="border-gray-700">
-                <TableHead className="text-gray-400">Status</TableHead>
-                <TableHead className="text-gray-400">Title</TableHead>
-                <TableHead className="text-gray-400">Due Date</TableHead>
-                <TableHead className="text-gray-400">Priority</TableHead>
-                <TableHead className="text-gray-400">Description</TableHead>
+              <TableRow>
+                <TableHead>Status</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,7 +189,7 @@ function TasksTable({ allTasks, getStatusIcon, getPriorityColor }: {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <TableCell colSpan={5} className="text-center text-gray-400 py-4">
+                  <TableCell colSpan={5} className="text-center text-gray-500 py-4">
                     No tasks found
                   </TableCell>
                 </MotionTableRow>
@@ -199,26 +199,19 @@ function TasksTable({ allTasks, getStatusIcon, getPriorityColor }: {
                     key={task.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
-                    whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
-                    className="border-gray-700"
+                    transition={{ delay: index * 0.1 }}
+                    className="hover:bg-gray-50"
                   >
+                    <TableCell>{getStatusIcon(task.status)}</TableCell>
+                    <TableCell className="font-medium">{task.title}</TableCell>
+                    <TableCell>{format(new Date(task.date), 'MMM dd, yyyy')}</TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        {getStatusIcon(task.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-gray-100">{task.title}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {format(new Date(task.date), 'MMM dd, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                      <Badge className={getPriorityColor(task.priority)}>
                         {task.priority}
-                      </span>
+                      </Badge>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate text-gray-300">
-                      {task.description || '-'}
+                    <TableCell className="text-gray-600">
+                      {task.description || 'No description'}
                     </TableCell>
                   </MotionTableRow>
                 ))
@@ -317,24 +310,24 @@ export default function UserDashboard() {
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
       case 'high':
-        return 'text-red-500';
+        return 'bg-red-100 text-red-700';
       case 'medium':
-        return 'text-yellow-500';
+        return 'bg-yellow-100 text-yellow-700';
       case 'low':
-        return 'text-green-500';
+        return 'bg-green-100 text-green-700';
       default:
-        return 'text-gray-500';
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
       case 'cancelled':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-red-600" />;
       case 'pending':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+        return <AlertCircle className="h-5 w-5 text-yellow-600" />;
       default:
         return null;
     }
@@ -342,10 +335,12 @@ export default function UserDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-t-4 border-red-500"></div>
-          <p className="text-lg text-gray-400">Loading dashboard...</p>
+      <div className="p-6 animate-pulse">
+        <div className="h-8 w-48 bg-gray-200 rounded mb-6"></div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+          ))}
         </div>
       </div>
     );
@@ -363,65 +358,68 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="container mx-auto py-6">
       <MetricsCards metrics={metrics} />
       <TasksTable 
         allTasks={allTasks} 
-        getStatusIcon={getStatusIcon} 
-        getPriorityColor={getPriorityColor} 
+        getStatusIcon={getStatusIcon}
+        getPriorityColor={getPriorityColor}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-gray-100">Calendar</CardTitle>
+            <CardTitle>Calendar</CardTitle>
           </CardHeader>
           <CardContent>
             <Suspense fallback={<div>Loading calendar...</div>}>
-              <MonthView
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
+              <MonthView />
             </Suspense>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-gray-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-gray-100">Scheduled Tasks</CardTitle>
+            <CardTitle>Scheduled Tasks</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {scheduledTasks.length === 0 ? (
-                <p className="text-center text-gray-400 py-4">No scheduled tasks</p>
-              ) : (
-                scheduledTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-start space-x-4 p-4 rounded-lg bg-gray-700/50"
-                  >
+              {scheduledTasks.map((task, index) => (
+                <div 
+                  key={task.id}
+                  className="flex items-center justify-between p-4 rounded-lg border bg-gray-50"
+                >
+                  <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
-                      {task.source === 'task' ? (
-                        <ClipboardList className="h-5 w-5 text-blue-400" />
+                      {task.type === 'task' ? (
+                        <ClipboardList className="h-5 w-5 text-gray-600" />
                       ) : (
-                        <CalendarIcon className="h-5 w-5 text-yellow-400" />
+                        <CalendarIcon className="h-5 w-5 text-gray-600" />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-100">{task.title}</p>
-                      <p className="text-sm text-gray-400">
-                        {format(task.date, 'MMM dd, yyyy')} at {task.time}
-                      </p>
-                      {task.description && (
-                        <p className="text-sm text-gray-400 mt-1">{task.description}</p>
-                      )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{task.title}</p>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(task.date, 'MMM dd, yyyy')} at {task.time}</span>
+                      </div>
                       {task.location && (
-                        <div className="flex items-center mt-1 text-sm text-gray-400">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {task.location}
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          <span>{task.location}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                ))
+                  {task.type === 'task' && task.priority && (
+                    <Badge className={getPriorityColor(task.priority)}>
+                      {task.priority}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+              {scheduledTasks.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  No scheduled tasks
+                </div>
               )}
             </div>
           </CardContent>
