@@ -904,11 +904,60 @@ export default function UserLeadDetailPage() {
             <CardContent>
               <TaskManager
                 tasks={leadData.tasks || []}
-                onAddTask={(task: Task) => {
-                  // Handle task addition
+                onAddTask={async (task: Task) => {
+                  try {
+                    const updatedTasks = [...(leadData.tasks || []), task];
+                    const response = await fetch(`/api/leads/${leadData._id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tasks: updatedTasks }),
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to add task');
+                    }
+
+                    setLeadData({ ...leadData, tasks: updatedTasks });
+                    toast({
+                      title: 'Success',
+                      description: 'Task added successfully',
+                    });
+                  } catch (error) {
+                    toast({
+                      variant: 'destructive',
+                      title: 'Error',
+                      description: 'Failed to add task',
+                    });
+                  }
                 }}
-                onUpdateTask={(taskId: string, updates: Partial<Task>) => {
-                  // Handle task update
+                onUpdateTask={async (taskId: string, updates: Partial<Task>) => {
+                  try {
+                    const updatedTasks = (leadData.tasks || []).map(task =>
+                      task.id === taskId ? { ...task, ...updates } : task
+                    );
+                    
+                    const response = await fetch(`/api/leads/${leadData._id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tasks: updatedTasks }),
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to update task');
+                    }
+
+                    setLeadData({ ...leadData, tasks: updatedTasks });
+                    toast({
+                      title: 'Success',
+                      description: 'Task updated successfully',
+                    });
+                  } catch (error) {
+                    toast({
+                      variant: 'destructive',
+                      title: 'Error',
+                      description: 'Failed to update task',
+                    });
+                  }
                 }}
               />
             </CardContent>
