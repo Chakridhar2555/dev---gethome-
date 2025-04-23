@@ -379,22 +379,130 @@ export default function UserLeadDetailPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Last Closed Date</Label>
+                    <Label>Bedrooms</Label>
                     <Input
-                      type="date"
-                      value={leadData.propertyDetails?.lastClosedDate ? new Date(leadData.propertyDetails.lastClosedDate).toISOString().split('T')[0] : ''}
+                      type="number"
+                      value={leadData.propertyDetails?.bedrooms ?? 0}
                       onChange={(e) => setLeadData({
                         ...leadData,
                         propertyDetails: {
                           ...leadData.propertyDetails,
-                          lastClosedDate: e.target.value,
+                          bedrooms: parseInt(e.target.value) || 0,
                           propertyType: leadData.propertyDetails?.propertyType || '',
-                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
                           bathrooms: leadData.propertyDetails?.bathrooms || 0,
                           squareFootage: leadData.propertyDetails?.squareFootage || 0,
                           yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
                           lotSize: leadData.propertyDetails?.lotSize || '',
                           parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bathrooms</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.bathrooms ?? 0}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          bathrooms: parseInt(e.target.value) || 0,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Square Footage</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.squareFootage ?? 0}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          squareFootage: parseInt(e.target.value) || 0,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year Built</Label>
+                    <Input
+                      type="number"
+                      value={leadData.propertyDetails?.yearBuilt ?? 0}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          yearBuilt: parseInt(e.target.value) || 0,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Lot Size</Label>
+                    <Input
+                      value={leadData.propertyDetails?.lotSize ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          lotSize: e.target.value,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Parking</Label>
+                    <Input
+                      value={leadData.propertyDetails?.parking ?? ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          parking: e.target.value,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
                           features: leadData.propertyDetails?.features || []
                         }
                       })}
