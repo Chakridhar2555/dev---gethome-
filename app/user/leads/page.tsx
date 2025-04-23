@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Edit2, Trash2, Phone, Mail, MapPin, Eye, Filter, Search, ChevronDown, ChevronUp, Globe, Upload, X } from "lucide-react";
+import { UserPlus, Edit2, Trash2, Phone, Mail, MapPin, Eye, Filter, Search, ChevronDown, ChevronUp, Globe, Upload, X, RefreshCw, CheckCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -103,14 +103,15 @@ type LeadFormData = {
   };
 };
 
-type LeadStatus = NonNullable<Lead['leadStatus']>;
+type LeadStatus = "hot" | "warm" | "cold" | "mild" | "closed";
 type LeadSource = NonNullable<Lead['leadSource']>;
 
 const leadStatuses: { value: LeadStatus; label: string }[] = [
   { value: "hot", label: "Hot" },
   { value: "warm", label: "Warm" },
   { value: "cold", label: "Cold" },
-  { value: "mild", label: "Mild" }
+  { value: "mild", label: "Mild" },
+  { value: "closed", label: "Closed" }
 ];
 
 const leadResponses = [
@@ -224,7 +225,8 @@ const LEAD_STATUSES = [
   "Hot Leads",
   "Warm Leads",
   "Cold Leads",
-  "Mild Leads"
+  "Mild Leads",
+  "Closed Leads"
 ];
 
 interface ImportDialogProps {
@@ -524,6 +526,8 @@ export default function LeadsPage() {
         return "text-red-400 bg-red-400/10";
       case "mild":
         return "text-green-400 bg-green-400/10";
+      case "closed":
+        return "text-purple-400 bg-purple-400/10";
       default:
         return "text-gray-400 bg-gray-400/10";
     }
@@ -704,6 +708,44 @@ export default function LeadsPage() {
       });
     } finally {
       setIsImportDialogOpen(false);
+    }
+  };
+
+  const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
+    try {
+      const response = await fetch(`/api/leads/${lead._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...lead,
+          leadStatus: newStatus
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update lead status');
+      }
+
+      // Update local state
+      setLeads(prevLeads =>
+        prevLeads.map(l =>
+          l._id === lead._id ? { ...l, leadStatus: newStatus } : l
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Lead marked as ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating lead status:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update lead status",
+      });
     }
   };
 
@@ -1002,6 +1044,27 @@ export default function LeadsPage() {
                           >
                             <Edit2 className="h-4 w-4 text-gray-500" />
                           </Button>
+                          {lead.leadStatus === 'closed' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStatusChange(lead, 'hot')}
+                              className="h-8 w-8 p-0"
+                              title="Reopen Lead"
+                            >
+                              <RefreshCw className="h-4 w-4 text-green-500" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStatusChange(lead, 'closed')}
+                              className="h-8 w-8 p-0"
+                              title="Close Lead"
+                            >
+                              <CheckCircle className="h-4 w-4 text-purple-500" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"

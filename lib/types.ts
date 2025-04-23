@@ -82,25 +82,36 @@ export interface Lead {
   name: string;
   email: string;
   phone: string;
-  date: string;
-  status?: string;
-  property?: string;
-  notes?: string;
-  tasks?: Task[];
-  callHistory?: CallHistory[];
-  showings?: Showing[];
-  assignedTo?: string;
+  status: string;
+  property: string;
+  notes: string;
+  leadStatus: "hot" | "warm" | "cold" | "mild" | "closed";
+  leadResponse: "active" | "inactive" | "not answering" | "not actively answering" | "always responding";
+  leadSource: "google ads" | "meta" | "refferal" | "linkedin" | "youtube";
+  leadType: "Pre construction" | "resale" | "seller" | "buyer";
+  clientType: "Investor" | "custom buyer" | "first home buyer" | "seasonal investor" | "commercial buyer";
+  callHistory?: any[];
+  propertyPreferences?: {
+    budget: {
+      min: number;
+      max: number;
+    };
+    propertyType: string[];
+    bedrooms: number;
+    bathrooms: number;
+    locations: string[];
+    features: string[];
+  };
+  assignedTo: string;
+  showings?: any[];
+  tasks?: any[];
   location?: string;
-  leadStatus?: 'hot' | 'warm' | 'cold' | 'mild';
-  leadType?: 'Pre construction' | 'resale' | 'seller' | 'buyer';
-  leadSource?: 'google ads' | 'meta' | 'refferal' | 'linkedin' | 'youtube';
-  leadResponse?: 'active' | 'inactive' | 'not answering' | 'not actively answering' | 'always responding';
-  clientType?: 'Investor' | 'custom buyer' | 'first home buyer' | 'seasonal investor' | 'commercial buyer';
-  leadConversion?: 'converted' | 'not-converted';
-  language?: string;
-  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
-  religion?: string;
   age?: number;
+  gender?: "male" | "female" | "other" | "prefer not to say";
+  language?: string;
+  religion?: string;
+  createdAt?: string;
+  updatedAt?: string;
   realtorAssociation?: {
     name: string;
     membershipNumber: string;
@@ -111,7 +122,4 @@ export interface Lead {
     totalValue: number;
     lastClosedDate: string;
   };
-  propertyPreferences?: PropertyPreferences;
-  updatedAt?: string;
-  createdAt?: string;
 } 
