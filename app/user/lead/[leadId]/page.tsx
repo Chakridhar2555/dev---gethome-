@@ -109,7 +109,7 @@ export default function UserLeadDetailPage() {
   const params = useParams()
   const { toast } = useToast()
   const [leadData, setLeadData] = useState<ExtendedLead | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [newNote, setNewNote] = useState("")
 
   useEffect(() => {
@@ -272,6 +272,42 @@ export default function UserLeadDetailPage() {
     }
   };
 
+  const handleSave = async () => {
+    if (!leadData) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/leads/${params.leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(leadData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update lead');
+      }
+
+      const updatedLead = await response.json();
+      setLeadData(updatedLead);
+      
+      toast({
+        title: "Success",
+        description: "Lead information updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update lead information"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading || !leadData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -290,6 +326,23 @@ export default function UserLeadDetailPage() {
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Leads
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={isLoading}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
         </Button>
       </div>
 
@@ -326,15 +379,24 @@ export default function UserLeadDetailPage() {
               <div>
                 <div className="space-y-2">
                   <Label>Name</Label>
-                  <Input value={leadData.name} readOnly />
+                  <Input 
+                    value={leadData.name} 
+                    onChange={(e) => setLeadData({ ...leadData, name: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input value={leadData.email} readOnly />
+                  <Input 
+                    value={leadData.email} 
+                    onChange={(e) => setLeadData({ ...leadData, email: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone</Label>
-                  <Input value={leadData.phone} readOnly />
+                  <Input 
+                    value={leadData.phone} 
+                    onChange={(e) => setLeadData({ ...leadData, phone: e.target.value })}
+                  />
                 </div>
               </div>
 
@@ -344,7 +406,10 @@ export default function UserLeadDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Location</Label>
-                    <Input value={leadData.location || ''} readOnly />
+                    <Input 
+                      value={leadData.location || ''} 
+                      onChange={(e) => setLeadData({ ...leadData, location: e.target.value })}
+                    />
                   </div>
                 </div>
               </div>
@@ -355,19 +420,41 @@ export default function UserLeadDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Age</Label>
-                    <Input value={leadData.age || ''} readOnly />
+                    <Input 
+                      value={leadData.age || ''} 
+                      onChange={(e) => setLeadData({ ...leadData, age: parseInt(e.target.value) || undefined })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Gender</Label>
-                    <Input value={leadData.gender || ''} readOnly />
+                    <Select
+                      value={leadData.gender || ''}
+                      onValueChange={(value) => setLeadData({ ...leadData, gender: value as Lead['gender'] })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Language</Label>
-                    <Input value={leadData.language || ''} readOnly />
+                    <Input 
+                      value={leadData.language || ''} 
+                      onChange={(e) => setLeadData({ ...leadData, language: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Religion</Label>
-                    <Input value={leadData.religion || ''} readOnly />
+                    <Input 
+                      value={leadData.religion || ''} 
+                      onChange={(e) => setLeadData({ ...leadData, religion: e.target.value })}
+                    />
                   </div>
                 </div>
               </div>
