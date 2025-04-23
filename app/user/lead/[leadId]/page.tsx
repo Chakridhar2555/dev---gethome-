@@ -361,15 +361,43 @@ export default function UserLeadDetailPage() {
                     <Label>Property Type</Label>
                     <Input
                       value={leadData.propertyDetails?.propertyType ?? ''}
-                      readOnly
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          propertyType: e.target.value,
+                          lastClosedDate: leadData.propertyDetails?.lastClosedDate || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Last Closed Date</Label>
                     <Input
                       type="date"
-                      value={leadData.propertyDetails?.lastClosedDate ?? ''}
-                      readOnly
+                      value={leadData.propertyDetails?.lastClosedDate ? new Date(leadData.propertyDetails.lastClosedDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        propertyDetails: {
+                          ...leadData.propertyDetails,
+                          lastClosedDate: e.target.value,
+                          propertyType: leadData.propertyDetails?.propertyType || '',
+                          bedrooms: leadData.propertyDetails?.bedrooms || 0,
+                          bathrooms: leadData.propertyDetails?.bathrooms || 0,
+                          squareFootage: leadData.propertyDetails?.squareFootage || 0,
+                          yearBuilt: leadData.propertyDetails?.yearBuilt || 0,
+                          lotSize: leadData.propertyDetails?.lotSize || '',
+                          parking: leadData.propertyDetails?.parking || '',
+                          features: leadData.propertyDetails?.features || []
+                        }
+                      })}
                     />
                   </div>
                 </div>
@@ -465,18 +493,45 @@ export default function UserLeadDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Realtor Association Name</Label>
-                    <Input value={leadData.realtorAssociation?.name || ''} readOnly />
+                    <Input
+                      value={leadData.realtorAssociation?.name || ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        realtorAssociation: {
+                          name: e.target.value,
+                          membershipNumber: leadData.realtorAssociation?.membershipNumber || '',
+                          joinDate: leadData.realtorAssociation?.joinDate || ''
+                        }
+                      })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Membership Number</Label>
-                    <Input value={leadData.realtorAssociation?.membershipNumber || ''} readOnly />
+                    <Input
+                      value={leadData.realtorAssociation?.membershipNumber || ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        realtorAssociation: {
+                          name: leadData.realtorAssociation?.name || '',
+                          membershipNumber: e.target.value,
+                          joinDate: leadData.realtorAssociation?.joinDate || ''
+                        }
+                      })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Join Date</Label>
                     <Input
                       type="date"
-                      value={leadData.realtorAssociation?.joinDate || ''}
-                      readOnly
+                      value={leadData.realtorAssociation?.joinDate ? new Date(leadData.realtorAssociation.joinDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        realtorAssociation: {
+                          name: leadData.realtorAssociation?.name || '',
+                          membershipNumber: leadData.realtorAssociation?.membershipNumber || '',
+                          joinDate: e.target.value
+                        }
+                      })}
                     />
                   </div>
                 </div>
@@ -488,18 +543,47 @@ export default function UserLeadDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Number of Sales</Label>
-                    <Input value={leadData.closedSales?.count || 0} readOnly />
+                    <Input
+                      type="number"
+                      value={leadData.closedSales?.count || 0}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        closedSales: {
+                          count: parseInt(e.target.value) || 0,
+                          totalValue: leadData.closedSales?.totalValue || 0,
+                          lastClosedDate: leadData.closedSales?.lastClosedDate || ''
+                        }
+                      })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Total Value</Label>
-                    <Input value={leadData.closedSales?.totalValue || 0} readOnly />
+                    <Input
+                      type="number"
+                      value={leadData.closedSales?.totalValue || 0}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        closedSales: {
+                          count: leadData.closedSales?.count || 0,
+                          totalValue: parseInt(e.target.value) || 0,
+                          lastClosedDate: leadData.closedSales?.lastClosedDate || ''
+                        }
+                      })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Last Closed Date</Label>
                     <Input
                       type="date"
-                      value={leadData.closedSales?.lastClosedDate || ''}
-                      readOnly
+                      value={leadData.closedSales?.lastClosedDate ? new Date(leadData.closedSales.lastClosedDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        closedSales: {
+                          count: leadData.closedSales?.count || 0,
+                          totalValue: leadData.closedSales?.totalValue || 0,
+                          lastClosedDate: e.target.value
+                        }
+                      })}
                     />
                   </div>
                 </div>
@@ -509,19 +593,73 @@ export default function UserLeadDetailPage() {
               <div>
                 <div className="space-y-2">
                   <Label>Lead Status</Label>
-                  <Input value={leadData.leadStatus || ''} readOnly />
+                  <Select
+                    value={leadData.leadStatus || ''}
+                    onValueChange={(value) => setLeadData({ ...leadData, leadStatus: value as Lead['leadStatus'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hot">Hot</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                      <SelectItem value="cold">Cold</SelectItem>
+                      <SelectItem value="mild">Mild</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Lead Response</Label>
-                  <Input value={leadData.leadResponse || ''} readOnly />
+                  <Select
+                    value={leadData.leadResponse || ''}
+                    onValueChange={(value) => setLeadData({ ...leadData, leadResponse: value as Lead['leadResponse'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select response" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="not answering">Not Answering</SelectItem>
+                      <SelectItem value="not actively answering">Not Actively Answering</SelectItem>
+                      <SelectItem value="always responding">Always Responding</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Client Type</Label>
-                  <Input value={leadData.clientType || ''} readOnly />
+                  <Select
+                    value={leadData.clientType || ''}
+                    onValueChange={(value) => setLeadData({ ...leadData, clientType: value as Lead['clientType'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Investor">Investor</SelectItem>
+                      <SelectItem value="custom buyer">Custom Buyer</SelectItem>
+                      <SelectItem value="first home buyer">First Home Buyer</SelectItem>
+                      <SelectItem value="seasonal investor">Seasonal Investor</SelectItem>
+                      <SelectItem value="commercial buyer">Commercial Buyer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Lead Type</Label>
-                  <Input value={leadData.leadType || ''} readOnly />
+                  <Select
+                    value={leadData.leadType || ''}
+                    onValueChange={(value) => setLeadData({ ...leadData, leadType: value as Lead['leadType'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select lead type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pre construction">Pre Construction</SelectItem>
+                      <SelectItem value="resale">Resale</SelectItem>
+                      <SelectItem value="seller">Seller</SelectItem>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
