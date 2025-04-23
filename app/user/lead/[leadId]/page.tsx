@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Phone, Mail, MapPin, Calendar, History, FileText, MessageSquare, ArrowLeft, Save, Loader2, DollarSign, User, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
+import { Phone, Mail, MapPin, Calendar, History, FileText, MessageSquare, ArrowLeft, Save, Loader2, DollarSign, User, Clock, CheckCircle2, XCircle, AlertCircle, Plus } from "lucide-react"
 import { CallHistory } from "@/components/call-history"
-import { ShowingCalendar } from "@/components/showing-calendar"
+import { ShowingCalendar } from "@/app/components/showing-calendar"
 import { TaskManager } from "@/components/task-manager"
 import type { Lead, Task, Showing } from "@/lib/types"
 import { formatDate } from "@/lib/utils"
@@ -22,6 +23,47 @@ interface ExtendedLead extends Lead {
   source?: string;
   address?: string;
   createdAt?: string;
+  propertyDetails?: {
+    propertyType: string;
+    lastClosedDate: string;
+    bedrooms: number;
+    bathrooms: number;
+    squareFootage: number;
+    yearBuilt: number;
+    lotSize: string;
+    parking: string;
+    features: string[];
+  };
+  propertyPreferences?: {
+    budget: {
+      min: number;
+      max: number;
+    };
+    propertyType: string[];
+    bedrooms: number;
+    bathrooms: number;
+    locations: string[];
+    features: string[];
+  };
+  realtorAssociation?: {
+    name: string;
+    membershipNumber: string;
+    joinDate: string;
+  };
+  closedSales?: {
+    count: number;
+    totalValue: number;
+    lastClosedDate: string;
+  };
+}
+
+interface TaskType {
+  id: string;
+  title: string;
+  date: string;
+  description?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
 }
 
 const leadStatuses = [
@@ -138,20 +180,19 @@ export default function UserLeadDetailPage() {
       const response = await fetch(`/api/leads/${leadData._id}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: newNote }),
+        body: JSON.stringify({ content: newNote }),
       })
 
       if (!response.ok) {
         throw new Error("Failed to add note")
       }
 
+      setNewNote("")
+      fetchLead()
       toast({
         title: "Success",
         description: "Note added successfully",
       })
-
-      setNewNote("")
-      fetchLead()
     } catch (error) {
       toast({
         variant: "destructive",
@@ -233,337 +274,314 @@ export default function UserLeadDetailPage() {
 
   if (isLoading || !leadData) {
     return (
-      <div className="p-6 animate-pulse">
-        <div className="h-8 w-48 bg-gray-800 rounded mb-6"></div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-800 rounded"></div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">{leadData.name}</h1>
-          <p className="text-gray-400">{leadData.email}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/user/leads")}
-            className="border-gray-600 hover:bg-gray-700"
-          >
-            Back to Leads
-          </Button>
-          <Button onClick={handleCall} className="bg-red-500 hover:bg-red-600">
-            <Phone className="h-4 w-4 mr-2" />
-            Call Lead
-          </Button>
-        </div>
+        <Button 
+          variant="ghost" 
+          onClick={() => router.push("/user/leads")}
+          className="flex items-center text-gray-600"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Leads
+        </Button>
       </div>
 
-      <Tabs defaultValue="details" className="space-y-4">
-        <TabsList className="bg-gray-800 border-gray-700">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="showings">Showings</TabsTrigger>
-          <TabsTrigger value="history">Call History</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Lead Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Property Details */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Property Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Property Type</Label>
+                    <Input
+                      value={leadData.propertyDetails?.propertyType ?? ''}
+                      readOnly
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Closed Date</Label>
+                    <Input
+                      type="date"
+                      value={leadData.propertyDetails?.lastClosedDate ?? ''}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
 
-        <TabsContent value="details">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Lead Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Basic Information */}
+              <div>
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input value={leadData.name} readOnly />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={leadData.email} readOnly />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input value={leadData.phone} readOnly />
+                </div>
+              </div>
+
+              {/* Assignment & Property */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Assignment & Property</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input value={leadData.location || ''} readOnly />
+                  </div>
+                </div>
+              </div>
+
+              {/* Demographics */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Demographics</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Age</Label>
+                    <Input value={leadData.age || ''} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Input value={leadData.gender || ''} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Language</Label>
+                    <Input value={leadData.language || ''} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Religion</Label>
+                    <Input value={leadData.religion || ''} readOnly />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sales Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Sales Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Realtor Association Name</Label>
+                    <Input value={leadData.realtorAssociation?.name || ''} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Membership Number</Label>
+                    <Input value={leadData.realtorAssociation?.membershipNumber || ''} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Join Date</Label>
+                    <Input
+                      type="date"
+                      value={leadData.realtorAssociation?.joinDate || ''}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Closed Sales */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Closed Sales</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Number of Sales</Label>
+                    <Input value={leadData.closedSales?.count || 0} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Total Value</Label>
+                    <Input value={leadData.closedSales?.totalValue || 0} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Closed Date</Label>
+                    <Input
+                      type="date"
+                      value={leadData.closedSales?.lastClosedDate || ''}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Lead Status and Type */}
+              <div>
                 <div className="space-y-2">
                   <Label>Lead Status</Label>
-                  <Select
-                    value={leadData.leadStatus}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadStatus: value as Lead['leadStatus'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadStatuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input value={leadData.leadStatus || ''} readOnly />
                 </div>
-
                 <div className="space-y-2">
                   <Label>Lead Response</Label>
-                  <Select
-                    value={leadData.leadResponse}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadResponse: value as Lead['leadResponse'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead response" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadResponses.map((response) => (
-                        <SelectItem key={response.value} value={response.value}>
-                          {response.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input value={leadData.leadResponse || ''} readOnly />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Lead Source</Label>
-                  <Select
-                    value={leadData.leadSource}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadSource: value as Lead['leadSource'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadSources.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Lead Type</Label>
-                  <Select
-                    value={leadData.leadType}
-                    onValueChange={(value) => setLeadData({ ...leadData, leadType: value as Lead['leadType'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Client Type</Label>
-                  <Select
-                    value={leadData.clientType}
-                    onValueChange={(value) => setLeadData({ ...leadData, clientType: value as Lead['clientType'] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input value={leadData.clientType || ''} readOnly />
                 </div>
+                <div className="space-y-2">
+                  <Label>Lead Type</Label>
+                  <Input value={leadData.leadType || ''} readOnly />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Source</Label>
-                  <div className="text-gray-100">{leadData.source || 'N/A'}</div>
+        <div className="space-y-6">
+          {/* Communication Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Communication</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button className="w-full" onClick={handleCall}>
+                <Phone className="h-4 w-4 mr-2" />
+                Make Call
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => router.push(`/user/lead/${leadData._id}/calls`)}>
+                View Call History
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                placeholder="Add a new note..."
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+              />
+              <Button onClick={addNote} className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Note
+              </Button>
+              <div className="space-y-2">
+                {Array.isArray(leadData.notes) ? (
+                  leadData.notes.map((note: string, index: number) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">{note}</p>
+                    </div>
+                  ))
+                ) : leadData.notes ? (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">{leadData.notes}</p>
+                  </div>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Property Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Property Preferences</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label>Budget Range</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Min"
+                      value={leadData.propertyPreferences?.budget?.min || ''}
+                      readOnly
+                    />
+                    <Input
+                      placeholder="Max"
+                      value={leadData.propertyPreferences?.budget?.max || ''}
+                      readOnly
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Phone</Label>
-                  <div className="text-gray-100">{leadData.phone}</div>
+                <div>
+                  <Label>Property Type</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {leadData.propertyPreferences?.propertyType?.map((type, index) => (
+                      <Badge key={index} variant="secondary">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Email</Label>
-                  <div className="text-gray-100">{leadData.email}</div>
+                <div>
+                  <Label>Preferred Locations</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {leadData.propertyPreferences?.locations?.map((location, index) => (
+                      <Badge key={index} variant="secondary">
+                        {location}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Address</Label>
-                  <div className="text-gray-100">{leadData.address || 'N/A'}</div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-gray-400">Created</Label>
-                  <div className="text-gray-100">
-                    {leadData.createdAt ? formatDate(leadData.createdAt) : formatDate(leadData.date)}
+                <div>
+                  <Label>Desired Features</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {leadData.propertyPreferences?.features?.map((feature, index) => (
+                      <Badge key={index} variant="secondary">
+                        {feature}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="tasks">
-          <Card className="bg-gray-800 border-gray-700">
+          {/* Property Showings */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-gray-100">Tasks</CardTitle>
+              <CardTitle>Property Showings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ShowingCalendar
+                showings={leadData.showings?.map(showing => ({
+                  ...showing,
+                  date: new Date(showing.date),
+                  status: showing.status || 'scheduled'
+                })) || []}
+                onAddShowing={async () => {}}
+                onUpdateShowing={async () => {}}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Tasks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tasks</CardTitle>
             </CardHeader>
             <CardContent>
               <TaskManager
                 tasks={leadData.tasks || []}
-                onUpdateTask={handleTaskUpdate}
-                onAddTask={async (task: {
-                  id: string;
-                  title: string;
-                  date: string | Date;
-                  description?: string;
-                  status: 'pending' | 'completed' | 'cancelled';
-                  priority: 'low' | 'medium' | 'high';
-                }) => {
-                  if (!leadData) return;
-                  const normalizedTask = {
-                    ...task,
-                    date: typeof task.date === 'string' ? task.date : task.date.toISOString()
-                  };
-                  const updatedTasks = [...(leadData.tasks || []), normalizedTask];
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/tasks`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(normalizedTask),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to add task");
-                    }
-
-                    setLeadData({ ...leadData, tasks: updatedTasks });
-                    toast({
-                      title: "Success",
-                      description: "Task added successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to add task",
-                    });
-                  }
+                onAddTask={(task: Task) => {
+                  // Handle task addition
+                }}
+                onUpdateTask={(taskId: string, updates: Partial<Task>) => {
+                  // Handle task update
                 }}
               />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="showings">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Property Showings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ShowingCalendar
-                showings={leadData.showings || []}
-                onAddShowing={async (showing) => {
-                  if (!leadData) return;
-                  const updatedShowings = [...(leadData.showings || []), showing];
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/showings`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(showing),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to add showing");
-                    }
-
-                    await fetchLead();
-                    toast({
-                      title: "Success",
-                      description: "Showing added successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to add showing",
-                    });
-                  }
-                }}
-                onUpdateShowing={async (showingId, updates) => {
-                  if (!leadData) return;
-                  try {
-                    const response = await fetch(`/api/leads/${leadData._id}/showings/${showingId}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(updates),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to update showing");
-                    }
-
-                    await fetchLead();
-                    toast({
-                      title: "Success",
-                      description: "Showing updated successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Failed to update showing",
-                    });
-                  }
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Call History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CallHistory calls={leadData.callHistory || []} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notes">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100">Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add a note..."
-                  className="bg-gray-700 border-gray-600"
-                />
-                <Button onClick={addNote} className="bg-red-500 hover:bg-red-600">
-                  Add Note
-                </Button>
-              </div>
-              <div className="space-y-4">
-                {leadData.notes && leadData.notes.split('\n').map((note, index) => (
-                  <div key={index} className="p-3 bg-gray-700 rounded-lg text-gray-100">
-                    {note}
-                  </div>
-                ))}
-                {!leadData.notes && (
-                  <p className="text-center text-gray-500">No notes available</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 } 

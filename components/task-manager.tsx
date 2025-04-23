@@ -10,15 +10,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { Plus, CheckCircle2, Circle, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-interface Task {
-  id: string
-  title: string
-  date: string | Date
-  description?: string
-  status: 'pending' | 'completed' | 'cancelled'
-  priority: 'low' | 'medium' | 'high'
-}
+import { Task } from "@/lib/types"
 
 interface TaskManagerProps {
   tasks: Task[]
