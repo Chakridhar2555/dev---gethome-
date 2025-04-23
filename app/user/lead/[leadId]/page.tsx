@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,53 +16,141 @@ import {
 import { Save } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import type { Lead, Task, Call, Showing } from "@/lib/types"
-import { leadStatuses, leadTypes, leadResponses, leadSources, clientTypes } from "@/lib/constants"
+import { leadStatuses as importedLeadStatuses, leadTypes as importedLeadTypes, leadResponses as importedLeadResponses, clientTypes as importedClientTypes } from '@/lib/constants'
 import { CallHistory } from "@/components/call-history"
 import { TaskManager } from "@/components/task-manager"
 import { ShowingCalendar } from "@/components/showing-calendar"
+import type { UITask } from "@/components/task-manager"
+
+interface RealtorAssociation {
+  name: string;
+  membershipNumber: string;
+  joinDate: string;
+}
+
+interface ClosedSales {
+  count: number;
+  totalValue: number;
+  lastClosedDate: string;
+}
+
+interface PropertyPreferences {
+  budget: {
+    min: number;
+    max: number;
+  };
+  propertyType: string[];
+  bedrooms: number;
+  bathrooms: number;
+  locations: string[];
+  features: string[];
+}
+
+interface StatusOption {
+  value: string;
+  label: string;
+}
+
+interface LocalTask {
+  id: string;
+  title: string;
+  date: string | Date;
+  description?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+}
+
+const defaultRealtorAssociation: Lead['realtorAssociation'] = {
+  name: "",
+  membershipNumber: "",
+  joinDate: ""
+};
+
+const defaultClosedSales: Lead['closedSales'] = {
+  count: 0,
+  totalValue: 0,
+  lastClosedDate: ""
+};
+
+const defaultPropertyPreferences: Lead['propertyPreferences'] = {
+  budget: {
+    min: 0,
+    max: 0
+  },
+  propertyType: [],
+  bedrooms: 0,
+  bathrooms: 0,
+  locations: [],
+  features: []
+};
 
 const defaultLead: Lead = {
-  id: "",
+  _id: "",
   name: "",
   email: "",
   phone: "",
-  language: "",
-  religion: "",
-  location: "",
+  date: new Date().toISOString(),
+  status: "New",
   property: "",
   notes: "",
-  leadStatus: "hot",
-  leadResponse: "active",
-  leadSource: "google ads",
-  leadType: "buyer",
-  clientType: "custom buyer",
-  realtorAssociation: {
-    name: "",
-    membershipNumber: "",
-    joinDate: ""
-  },
-  closedSales: {
-    count: 0,
-    totalValue: 0,
-    lastClosedDate: ""
-  },
-  propertyPreferences: {
-    budget: {
-      min: 0,
-      max: 0
-    },
-    locations: [],
-    features: [],
-    propertyType: "",
-    bedrooms: 0,
-    bathrooms: 0
-  },
+  tasks: [],
   callHistory: [],
   showings: [],
-  tasks: [],
-  createdAt: "",
-  updatedAt: ""
+  assignedTo: "",
+  location: "",
+  leadStatus: "hot",
+  leadType: "buyer",
+  leadSource: "google ads",
+  leadResponse: "active",
+  clientType: "custom buyer",
+  leadConversion: "not-converted",
+  language: "",
+  gender: "prefer-not-to-say",
+  religion: "",
+  age: 0,
+  realtorAssociation: defaultRealtorAssociation,
+  closedSales: defaultClosedSales,
+  propertyPreferences: defaultPropertyPreferences,
+  updatedAt: new Date().toISOString(),
+  createdAt: new Date().toISOString()
 }
+
+const leadStatuses: StatusOption[] = [
+  { value: 'New', label: 'New' },
+  { value: 'Contacted', label: 'Contacted' },
+  { value: 'Qualified', label: 'Qualified' },
+  { value: 'Meeting Scheduled', label: 'Meeting Scheduled' },
+  { value: 'Proposal Sent', label: 'Proposal Sent' },
+  { value: 'Negotiating', label: 'Negotiating' },
+  { value: 'Closed Won', label: 'Closed Won' },
+  { value: 'Closed Lost', label: 'Closed Lost' },
+  { value: 'On Hold', label: 'On Hold' }
+];
+
+const leadResponses: StatusOption[] = [
+  { value: 'Interested', label: 'Interested' },
+  { value: 'Not Interested', label: 'Not Interested' },
+  { value: 'Follow Up', label: 'Follow Up' },
+  { value: 'No Response', label: 'No Response' },
+  { value: 'Wrong Number', label: 'Wrong Number' },
+  { value: 'Do Not Contact', label: 'Do Not Contact' }
+];
+
+const clientTypes: StatusOption[] = [
+  { value: 'Investor', label: 'Investor' },
+  { value: 'Individual', label: 'Individual' },
+  { value: 'Couple', label: 'Couple' },
+  { value: 'Family', label: 'Family' },
+  { value: 'Corporate', label: 'Corporate' },
+  { value: 'Other', label: 'Other' }
+];
+
+const leadTypes: StatusOption[] = [
+  { value: 'Buyer', label: 'Buyer' },
+  { value: 'Seller', label: 'Seller' },
+  { value: 'Both', label: 'Both' },
+  { value: 'Rental', label: 'Rental' }
+];
 
 export default function UserLeadPage({ params }: { params: { leadId: string } }) {
   const router = useRouter()
@@ -70,7 +158,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
   const [isLoading, setIsLoading] = useState(false)
   const [leadData, setLeadData] = useState<Lead>(defaultLead)
   const [calls, setCalls] = useState<Call[]>([])
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<UITask[]>([])
   const [showings, setShowings] = useState<Showing[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
@@ -83,25 +171,38 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
       const response = await fetch(`/api/leads/${params.leadId}`)
       if (!response.ok) throw new Error('Failed to fetch lead data')
       const data = await response.json()
-      setLeadData({
+      
+      // Ensure all required fields have default values
+      const updatedData: Lead = {
         ...defaultLead,
         ...data,
         realtorAssociation: {
-          ...defaultLead.realtorAssociation,
-          ...data.realtorAssociation
+          name: data.realtorAssociation?.name ?? "",
+          membershipNumber: data.realtorAssociation?.membershipNumber ?? "",
+          joinDate: data.realtorAssociation?.joinDate ?? ""
         },
         closedSales: {
-          ...defaultLead.closedSales,
-          ...data.closedSales
+          count: data.closedSales?.count ?? 0,
+          totalValue: data.closedSales?.totalValue ?? 0,
+          lastClosedDate: data.closedSales?.lastClosedDate ?? ""
         },
         propertyPreferences: {
-          ...defaultLead.propertyPreferences,
-          ...data.propertyPreferences
+          budget: {
+            min: data.propertyPreferences?.budget?.min ?? 0,
+            max: data.propertyPreferences?.budget?.max ?? 0
+          },
+          propertyType: data.propertyPreferences?.propertyType ?? [],
+          bedrooms: data.propertyPreferences?.bedrooms ?? 0,
+          bathrooms: data.propertyPreferences?.bathrooms ?? 0,
+          locations: data.propertyPreferences?.locations ?? [],
+          features: data.propertyPreferences?.features ?? []
         }
-      })
-      setCalls(data.callHistory || [])
-      setTasks(data.tasks || [])
-      setShowings(data.showings || [])
+      }
+      
+      setLeadData(updatedData)
+      setCalls(data.callHistory ?? [])
+      setTasks(data.tasks ?? [])
+      setShowings(data.showings ?? [])
     } catch (error) {
       console.error('Error fetching lead:', error)
       toast({
@@ -141,6 +242,220 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
     }
   }
 
+  const convertToLibTask = (task: UITask) => ({
+    id: task.id,
+    title: task.title,
+    date: typeof task.date === 'string' ? task.date : task.date.toISOString(),
+    description: task.description || '',
+    status: task.status,
+    priority: task.priority
+  })
+
+  const handleAddTask = useCallback((task: UITask) => {
+    const newTask: UITask = {
+      ...task,
+      id: Date.now().toString(),
+      date: task.date
+    }
+    
+    setLeadData(prevData => ({
+      ...prevData,
+      tasks: [...(prevData.tasks || []), convertToLibTask(newTask)]
+    }))
+    
+    setTasks(prevTasks => [...prevTasks, newTask])
+    
+    toast({
+      title: "Success",
+      description: "Task added successfully"
+    })
+  }, [toast])
+
+  const handleUpdateTask = useCallback((taskId: string, updates: Partial<UITask>) => {
+    setLeadData(prevData => ({
+      ...prevData,
+      tasks: (prevData.tasks || []).map(task => {
+        if (task.id === taskId) {
+          const updatedTask = { ...task, ...updates }
+          return convertToLibTask(updatedTask as UITask)
+        }
+        return task
+      })
+    }))
+    
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    )
+    
+    toast({
+      title: "Success",
+      description: "Task updated successfully"
+    })
+  }, [toast])
+
+  const handleAddShowing = useCallback((showing: Showing) => {
+    setShowings(prevShowings => [...prevShowings, showing]);
+    
+    setLeadData(prevData => ({
+      ...prevData,
+      showings: [...(prevData.showings ?? []), showing]
+    }));
+    
+    toast({
+      title: "Showing scheduled",
+      description: "The showing has been scheduled successfully."
+    });
+  }, [toast]);
+
+  const handleUpdateShowing = useCallback((showingId: string, updates: Partial<Showing>) => {
+    setShowings(prevShowings => 
+      prevShowings.map(showing => 
+        showing.id === showingId ? { ...showing, ...updates } : showing
+      )
+    );
+    
+    setLeadData(prevData => ({
+      ...prevData,
+      showings: (prevData.showings ?? []).map(showing => 
+        showing.id === showingId ? { ...showing, ...updates } : showing
+      )
+    }));
+    
+    toast({
+      title: "Showing updated",
+      description: "The showing has been updated successfully."
+    });
+  }, [toast]);
+
+  const handleDateSelect = useCallback((date: Date | undefined) => {
+    setSelectedDate(date || new Date());
+  }, []);
+
+  const handleRealtorAssociationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!leadData) return
+
+    const realtorAssociation = {
+      name: leadData.realtorAssociation?.name || '',
+      membershipNumber: leadData.realtorAssociation?.membershipNumber || '',
+      joinDate: leadData.realtorAssociation?.joinDate || ''
+    }
+
+    const updatedData = {
+      ...leadData,
+      realtorAssociation
+    }
+
+    try {
+      const response = await fetch(`/api/leads/${params.leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      })
+      if (!response.ok) throw new Error('Failed to update realtor association')
+      toast({
+        title: "Success",
+        description: "Realtor association information updated",
+      })
+    } catch (error) {
+      console.error('Error updating realtor association:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update realtor association information",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleClosedSalesSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!leadData) return
+
+    const closedSales = {
+      count: leadData.closedSales?.count || 0,
+      totalValue: leadData.closedSales?.totalValue || 0,
+      lastClosedDate: leadData.closedSales?.lastClosedDate || ''
+    }
+
+    const updatedData = {
+      ...leadData,
+      closedSales
+    }
+
+    try {
+      const response = await fetch(`/api/leads/${params.leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      })
+      if (!response.ok) throw new Error('Failed to update closed sales')
+      toast({
+        title: "Success",
+        description: "Closed sales information updated",
+      })
+    } catch (error) {
+      console.error('Error updating closed sales:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update closed sales information",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRealtorAssociationChange = (field: keyof RealtorAssociation, value: string) => {
+    setLeadData(prev => {
+      const updatedData = {
+        ...prev,
+        realtorAssociation: {
+          name: prev.realtorAssociation?.name || '',
+          membershipNumber: prev.realtorAssociation?.membershipNumber || '',
+          joinDate: prev.realtorAssociation?.joinDate || '',
+          [field]: value
+        }
+      } as Lead;
+      return updatedData;
+    });
+  }
+
+  const handleClosedSalesChange = (field: keyof ClosedSales, value: string | number) => {
+    setLeadData(prev => {
+      const updatedData = {
+        ...prev,
+        closedSales: {
+          count: prev.closedSales?.count || 0,
+          totalValue: prev.closedSales?.totalValue || 0,
+          lastClosedDate: prev.closedSales?.lastClosedDate || '',
+          [field]: value
+        }
+      } as Lead;
+      return updatedData;
+    });
+  }
+
+  const handlePropertyPreferencesChange = (field: keyof PropertyPreferences, value: any) => {
+    setLeadData(prev => {
+      const updatedData = {
+        ...prev,
+        propertyPreferences: {
+          budget: {
+            min: prev.propertyPreferences?.budget?.min || 0,
+            max: prev.propertyPreferences?.budget?.max || 0
+          },
+          propertyType: prev.propertyPreferences?.propertyType || [],
+          bedrooms: prev.propertyPreferences?.bedrooms || 0,
+          bathrooms: prev.propertyPreferences?.bathrooms || 0,
+          locations: prev.propertyPreferences?.locations || [],
+          features: prev.propertyPreferences?.features || [],
+          [field]: value
+        }
+      } as Lead;
+      return updatedData;
+    });
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -169,15 +484,15 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Age</Label>
                   <Input
                     type="number"
-                    value={leadData.age || ''}
-                    onChange={(e) => setLeadData({ ...leadData, age: parseInt(e.target.value) || 0 })}
+                    value={leadData.age ?? ''}
+                    onChange={(e) => setLeadData(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>
                   <Select
-                    value={leadData.gender || ''}
-                    onValueChange={(value) => setLeadData({ ...leadData, gender: value as Lead['gender'] })}
+                    value={leadData.gender ?? ''}
+                    onValueChange={(value) => setLeadData(prev => ({ ...prev, gender: value as Lead['gender'] }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
@@ -189,20 +504,6 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                       <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Language</Label>
-                  <Input
-                    value={leadData.language}
-                    onChange={(e) => setLeadData({ ...leadData, language: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Religion</Label>
-                  <Input
-                    value={leadData.religion}
-                    onChange={(e) => setLeadData({ ...leadData, religion: e.target.value })}
-                  />
                 </div>
               </div>
             </form>
@@ -219,27 +520,15 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <div className="space-y-2">
                   <Label>Realtor Association Name</Label>
                   <Input
-                    value={leadData.realtorAssociation.name}
-                    onChange={(e) => setLeadData({
-                      ...leadData,
-                      realtorAssociation: {
-                        ...leadData.realtorAssociation,
-                        name: e.target.value
-                      }
-                    })}
+                    value={leadData.realtorAssociation?.name || ''}
+                    onChange={(e) => handleRealtorAssociationChange('name', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Membership Number</Label>
                   <Input
-                    value={leadData.realtorAssociation.membershipNumber}
-                    onChange={(e) => setLeadData({
-                      ...leadData,
-                      realtorAssociation: {
-                        ...leadData.realtorAssociation,
-                        membershipNumber: e.target.value
-                      }
-                    })}
+                    value={leadData.realtorAssociation?.membershipNumber || ''}
+                    onChange={(e) => handleRealtorAssociationChange('membershipNumber', e.target.value)}
                   />
                 </div>
               </div>
@@ -248,14 +537,8 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Label>Join Date</Label>
                 <Input
                   type="date"
-                  value={leadData.realtorAssociation.joinDate}
-                  onChange={(e) => setLeadData({
-                    ...leadData,
-                    realtorAssociation: {
-                      ...leadData.realtorAssociation,
-                      joinDate: e.target.value
-                    }
-                  })}
+                  value={leadData.realtorAssociation?.joinDate || ''}
+                  onChange={(e) => handleRealtorAssociationChange('joinDate', e.target.value)}
                 />
               </div>
 
@@ -266,28 +549,16 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                     <Label>Number of Sales</Label>
                     <Input
                       type="number"
-                      value={leadData.closedSales.count}
-                      onChange={(e) => setLeadData({
-                        ...leadData,
-                        closedSales: {
-                          ...leadData.closedSales,
-                          count: parseInt(e.target.value) || 0
-                        }
-                      })}
+                      value={leadData.closedSales?.count || 0}
+                      onChange={(e) => handleClosedSalesChange('count', parseInt(e.target.value) || 0)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Total Value</Label>
                     <Input
                       type="number"
-                      value={leadData.closedSales.totalValue}
-                      onChange={(e) => setLeadData({
-                        ...leadData,
-                        closedSales: {
-                          ...leadData.closedSales,
-                          totalValue: parseInt(e.target.value) || 0
-                        }
-                      })}
+                      value={leadData.closedSales?.totalValue || 0}
+                      onChange={(e) => handleClosedSalesChange('totalValue', parseInt(e.target.value) || 0)}
                     />
                   </div>
                 </div>
@@ -295,14 +566,8 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Last Closed Date</Label>
                   <Input
                     type="date"
-                    value={leadData.closedSales.lastClosedDate}
-                    onChange={(e) => setLeadData({
-                      ...leadData,
-                      closedSales: {
-                        ...leadData.closedSales,
-                        lastClosedDate: e.target.value
-                      }
-                    })}
+                    value={leadData.closedSales?.lastClosedDate || ''}
+                    onChange={(e) => handleClosedSalesChange('lastClosedDate', e.target.value)}
                   />
                 </div>
               </div>
@@ -419,14 +684,8 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Label>Preferred Locations</Label>
                 <Input
                   placeholder="Add location and press Enter"
-                  value={leadData.propertyPreferences.locations.join(', ')}
-                  onChange={(e) => setLeadData({
-                    ...leadData,
-                    propertyPreferences: {
-                      ...leadData.propertyPreferences,
-                      locations: e.target.value.split(',').map(loc => loc.trim())
-                    }
-                  })}
+                  value={(leadData.propertyPreferences?.locations || []).join(', ')}
+                  onChange={(e) => handlePropertyPreferencesChange('locations', e.target.value.split(',').map(loc => loc.trim()))}
                 />
               </div>
 
@@ -434,14 +693,8 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Label>Desired Features</Label>
                 <Input
                   placeholder="Add feature and press Enter"
-                  value={leadData.propertyPreferences.features.join(', ')}
-                  onChange={(e) => setLeadData({
-                    ...leadData,
-                    propertyPreferences: {
-                      ...leadData.propertyPreferences,
-                      features: e.target.value.split(',').map(feature => feature.trim())
-                    }
-                  })}
+                  value={(leadData.propertyPreferences?.features || []).join(', ')}
+                  onChange={(e) => handlePropertyPreferencesChange('features', e.target.value.split(',').map(feature => feature.trim()))}
                 />
               </div>
 
@@ -450,16 +703,10 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Budget (Min)</Label>
                   <Input
                     type="number"
-                    value={leadData.propertyPreferences.budget.min}
-                    onChange={(e) => setLeadData({
-                      ...leadData,
-                      propertyPreferences: {
-                        ...leadData.propertyPreferences,
-                        budget: {
-                          ...leadData.propertyPreferences.budget,
-                          min: parseInt(e.target.value) || 0
-                        }
-                      }
+                    value={leadData.propertyPreferences?.budget?.min || 0}
+                    onChange={(e) => handlePropertyPreferencesChange('budget', {
+                      ...(leadData.propertyPreferences?.budget || {}),
+                      min: parseInt(e.target.value) || 0
                     })}
                   />
                 </div>
@@ -467,16 +714,10 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Budget (Max)</Label>
                   <Input
                     type="number"
-                    value={leadData.propertyPreferences.budget.max}
-                    onChange={(e) => setLeadData({
-                      ...leadData,
-                      propertyPreferences: {
-                        ...leadData.propertyPreferences,
-                        budget: {
-                          ...leadData.propertyPreferences.budget,
-                          max: parseInt(e.target.value) || 0
-                        }
-                      }
+                    value={leadData.propertyPreferences?.budget?.max || 0}
+                    onChange={(e) => handlePropertyPreferencesChange('budget', {
+                      ...(leadData.propertyPreferences?.budget || {}),
+                      max: parseInt(e.target.value) || 0
                     })}
                   />
                 </div>
@@ -503,20 +744,8 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
           <CardContent>
             <TaskManager 
               tasks={tasks}
-              onAddTask={(task: Task) => {
-                // Handle adding task
-                toast({
-                  title: "Task added",
-                  description: "The task has been added successfully."
-                });
-              }}
-              onUpdateTask={(taskId: string, updates: Partial<Task>) => {
-                // Handle updating task
-                toast({
-                  title: "Task updated",
-                  description: "The task has been updated successfully."
-                });
-              }}
+              onAddTask={handleAddTask}
+              onUpdateTask={handleUpdateTask}
             />
           </CardContent>
         </Card>
@@ -528,21 +757,9 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
           <CardContent>
             <ShowingCalendar 
               showings={showings}
-              onAddShowing={async (showing: Showing) => {
-                // Handle adding showing
-                toast({
-                  title: "Showing scheduled",
-                  description: "The showing has been scheduled successfully."
-                });
-              }}
-              onUpdateShowing={async (showingId: string, updates: Partial<Showing>) => {
-                // Handle updating showing
-                toast({
-                  title: "Showing updated",
-                  description: "The showing has been updated successfully."
-                });
-              }}
-              onDateSelect={(date) => setSelectedDate(date || new Date())}
+              onAddShowing={handleAddShowing}
+              onUpdateShowing={handleUpdateShowing}
+              onDateSelect={handleDateSelect}
             />
           </CardContent>
         </Card>

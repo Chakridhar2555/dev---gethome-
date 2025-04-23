@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Plus, CheckCircle2, Circle, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface Task {
+export interface UITask {
   id: string
   title: string
   date: string | Date
@@ -21,14 +21,14 @@ interface Task {
 }
 
 interface TaskManagerProps {
-  tasks: Task[]
-  onAddTask: (task: Task) => void
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => void
+  tasks: UITask[]
+  onAddTask: (task: UITask) => void
+  onUpdateTask: (taskId: string, updates: Partial<UITask>) => void
 }
 
 export function TaskManager({ tasks, onAddTask, onUpdateTask }: TaskManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newTask, setNewTask] = useState<Partial<Task>>({
+  const [newTask, setNewTask] = useState<Partial<UITask>>({
     status: 'pending',
     priority: 'medium'
   })
@@ -44,7 +44,7 @@ export function TaskManager({ tasks, onAddTask, onUpdateTask }: TaskManagerProps
       return
     }
 
-    const task: Task = {
+    const task: UITask = {
       id: crypto.randomUUID(),
       title: newTask.title!,
       date: typeof newTask.date === 'string' ? newTask.date : newTask.date!.toISOString(),
@@ -127,7 +127,7 @@ export function TaskManager({ tasks, onAddTask, onUpdateTask }: TaskManagerProps
                 <select
                   className="w-full rounded-md border p-2"
                   value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Task['priority'] })}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as UITask['priority'] })}
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>

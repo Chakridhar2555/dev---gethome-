@@ -117,7 +117,17 @@ export interface Lead {
     totalValue: number;
     lastClosedDate: string;
   };
-  propertyPreferences?: PropertyPreferences;
+  propertyPreferences?: {
+    budget: {
+      min: number;
+      max: number;
+    };
+    propertyType: string[];
+    bedrooms: number;
+    bathrooms: number;
+    locations: string[];
+    features: string[];
+  };
   updatedAt?: string;
   createdAt?: string;
 }
