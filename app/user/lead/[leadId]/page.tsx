@@ -319,14 +319,14 @@ export default function UserLeadDetailPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <Button 
+          <Button
           variant="ghost" 
-          onClick={() => router.push("/user/leads")}
+            onClick={() => router.push("/user/leads")}
           className="flex items-center text-gray-600"
-        >
+          >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Leads
-        </Button>
+            Back to Leads
+          </Button>
         <Button
           onClick={handleSave}
           disabled={isLoading}
@@ -343,14 +343,14 @@ export default function UserLeadDetailPage() {
               Save Changes
             </>
           )}
-        </Button>
+          </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
+            <CardHeader>
             <CardTitle>Lead Information</CardTitle>
-          </CardHeader>
+            </CardHeader>
           <CardContent>
             <div className="space-y-6">
               {/* Property Details */}
@@ -648,7 +648,7 @@ export default function UserLeadDetailPage() {
               {/* Closed Sales */}
               <div>
                 <h3 className="text-lg font-medium mb-4">Closed Sales</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Number of Sales</Label>
                     <Input
@@ -806,7 +806,7 @@ export default function UserLeadDetailPage() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Note
               </Button>
-              <div className="space-y-2">
+                <div className="space-y-2">
                 {Array.isArray(leadData.notes) ? (
                   leadData.notes.map((note: string, index: number) => (
                     <div key={index} className="p-3 bg-gray-50 rounded-lg">
@@ -818,7 +818,7 @@ export default function UserLeadDetailPage() {
                     <p className="text-sm text-gray-600">{leadData.notes}</p>
                   </div>
                 ) : null}
-              </div>
+                </div>
             </CardContent>
           </Card>
 
@@ -862,7 +862,7 @@ export default function UserLeadDetailPage() {
                         {location}
                       </Badge>
                     ))}
-                  </div>
+                </div>
                 </div>
                 <div>
                   <Label>Desired Features</Label>
@@ -913,8 +913,8 @@ export default function UserLeadDetailPage() {
               />
             </CardContent>
           </Card>
-        </div>
-      </div>
+                  </div>
+              </div>
     </div>
   )
 } 

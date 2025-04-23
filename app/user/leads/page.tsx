@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Edit2, Trash2, Phone, Mail, MapPin, Eye, Filter, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { UserPlus, Edit2, Trash2, Phone, Mail, MapPin, Eye, Filter, Search, ChevronDown, ChevronUp, Globe, Upload, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Lead } from "@/lib/types"
+import React from "react";
 
 interface LeadFilters {
   leadStatus: string;
@@ -226,6 +227,124 @@ const LEAD_STATUSES = [
   "Mild Leads"
 ];
 
+interface ImportDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onFileSelect: (file: File) => void;
+}
+
+const ImportDialog = ({ isOpen, onClose, onFileSelect }: ImportDialogProps) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === "text/csv" || file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+        setSelectedFile(file);
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = () => {
+    if (selectedFile) {
+      onFileSelect(selectedFile);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Import Leads</DialogTitle>
+        </DialogHeader>
+        <div
+          className={`mt-4 p-6 border-2 border-dashed rounded-lg text-center ${
+            dragActive ? "border-red-500 bg-red-50" : "border-gray-300"
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".csv,.xlsx"
+            onChange={handleFileSelect}
+          />
+          {selectedFile ? (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-gray-600">{selectedFile.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedFile(null)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Select File
+                </Button>
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                or drag and drop your file here
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Supports CSV and Excel files
+              </p>
+            </>
+          )}
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleImport}
+            disabled={!selectedFile}
+            className="bg-red-500 hover:bg-red-600 text-white"
+          >
+            Import
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function LeadsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -250,6 +369,7 @@ export default function LeadsPage() {
   const [selectedLocation, setSelectedLocation] = useState<string>("All Locations");
   const [selectedStatus, setSelectedStatus] = useState<string>("All Leads");
   const [showFilters, setShowFilters] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -552,6 +672,41 @@ export default function LeadsPage() {
     });
   };
 
+  const handleImportFile = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/leads/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import leads');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Success",
+        description: `Successfully imported ${result.importedCount} leads`,
+      });
+
+      // Refresh the leads list
+      fetchLeads();
+    } catch (error) {
+      console.error('Error importing leads:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to import leads. Please check your file format and try again.",
+      });
+    } finally {
+      setIsImportDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 animate-pulse">
@@ -571,6 +726,40 @@ export default function LeadsPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Lead Management</CardTitle>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => {/* Handle No Calls click */}}
+              >
+                <Phone className="h-4 w-4" />
+                No Calls ({leads.filter(lead => !lead.callHistory || lead.callHistory.length === 0).length})
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => {/* Handle Website Enquiries click */}}
+              >
+                <Globe className="h-4 w-4" />
+                Website Enquiries ({leads.filter(lead => lead.leadSource === 'google ads' || lead.leadSource === 'meta').length})
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 text-green-600 hover:text-green-700"
+                onClick={() => setIsImportDialogOpen(true)}
+              >
+                <Upload className="h-4 w-4" />
+                Import Leads
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                onClick={() => {/* Handle Clear click */}}
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All Leads
+              </Button>
+            </div>
           </div>
           
           {/* Lead Status Filters */}
@@ -1175,6 +1364,12 @@ export default function LeadsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <ImportDialog
+          isOpen={isImportDialogOpen}
+          onClose={() => setIsImportDialogOpen(false)}
+          onFileSelect={handleImportFile}
+        />
       </Card>
     </div>
   );
