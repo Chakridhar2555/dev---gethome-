@@ -143,11 +143,26 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
     }
   }, [leadData, params.leadId, toast])
 
-  const handleLeadDataChange = useCallback((field: keyof Lead, value: any) => {
+  const updateLeadData = useCallback((updates: Partial<Lead>) => {
     setLeadData(prev => ({
       ...prev,
-      [field]: value
+      ...updates
     }))
+  }, [])
+
+  const updateNestedField = useCallback((path: string[], value: any) => {
+    setLeadData(prev => {
+      const newData = { ...prev }
+      let current: any = newData
+      for (let i = 0; i < path.length - 1; i++) {
+        if (!current[path[i]]) {
+          current[path[i]] = {}
+        }
+        current = current[path[i]]
+      }
+      current[path[path.length - 1]] = value
+      return newData
+    })
   }, [])
 
   return (
@@ -179,14 +194,14 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Input
                     type="number"
                     value={leadData.age || ''}
-                    onChange={(e) => handleLeadDataChange('age', parseInt(e.target.value) || 0)}
+                    onChange={(e) => updateLeadData({ age: parseInt(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>
                   <Select
                     value={leadData.gender || ''}
-                    onValueChange={(value) => handleLeadDataChange('gender', value)}
+                    onValueChange={(value) => updateLeadData({ gender: value as Lead['gender'] })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
@@ -202,15 +217,61 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <div className="space-y-2">
                   <Label>Language</Label>
                   <Input
-                    value={leadData.language}
-                    onChange={(e) => handleLeadDataChange('language', e.target.value)}
+                    value={leadData.language || ''}
+                    onChange={(e) => updateLeadData({ language: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Religion</Label>
                   <Input
-                    value={leadData.religion}
-                    onChange={(e) => handleLeadDataChange('religion', e.target.value)}
+                    value={leadData.religion || ''}
+                    onChange={(e) => updateLeadData({ religion: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Realtor Association Name</Label>
+                  <Input
+                    value={leadData.realtorAssociation?.name || ''}
+                    onChange={(e) => updateNestedField(['realtorAssociation', 'name'], e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Membership Number</Label>
+                  <Input
+                    value={leadData.realtorAssociation?.membershipNumber || ''}
+                    onChange={(e) => updateNestedField(['realtorAssociation', 'membershipNumber'], e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Join Date</Label>
+                  <Input
+                    type="date"
+                    value={leadData.realtorAssociation?.joinDate || ''}
+                    onChange={(e) => updateNestedField(['realtorAssociation', 'joinDate'], e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Closed Sales Count</Label>
+                  <Input
+                    type="number"
+                    value={leadData.closedSales?.count || 0}
+                    onChange={(e) => updateNestedField(['closedSales', 'count'], parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Total Value</Label>
+                  <Input
+                    type="number"
+                    value={leadData.closedSales?.totalValue || 0}
+                    onChange={(e) => updateNestedField(['closedSales', 'totalValue'], parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last Closed Date</Label>
+                  <Input
+                    type="date"
+                    value={leadData.closedSales?.lastClosedDate || ''}
+                    onChange={(e) => updateNestedField(['closedSales', 'lastClosedDate'], e.target.value)}
                   />
                 </div>
               </div>
@@ -229,14 +290,14 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Realtor Association Name</Label>
                   <Input
                     value={leadData.realtorAssociation.name}
-                    onChange={(e) => handleLeadDataChange('realtorAssociation.name', e.target.value)}
+                    onChange={(e) => updateLeadData({ realtorAssociation: { ...leadData.realtorAssociation, name: e.target.value } })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Membership Number</Label>
                   <Input
                     value={leadData.realtorAssociation.membershipNumber}
-                    onChange={(e) => handleLeadDataChange('realtorAssociation.membershipNumber', e.target.value)}
+                    onChange={(e) => updateLeadData({ realtorAssociation: { ...leadData.realtorAssociation, membershipNumber: e.target.value } })}
                   />
                 </div>
               </div>
@@ -246,7 +307,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Input
                   type="date"
                   value={leadData.realtorAssociation.joinDate}
-                  onChange={(e) => handleLeadDataChange('realtorAssociation.joinDate', e.target.value)}
+                  onChange={(e) => updateLeadData({ realtorAssociation: { ...leadData.realtorAssociation, joinDate: e.target.value } })}
                 />
               </div>
 
@@ -258,7 +319,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                     <Input
                       type="number"
                       value={leadData.closedSales.count}
-                      onChange={(e) => handleLeadDataChange('closedSales.count', parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateLeadData({ closedSales: { ...leadData.closedSales, count: parseInt(e.target.value) || 0 } })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -266,7 +327,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                     <Input
                       type="number"
                       value={leadData.closedSales.totalValue}
-                      onChange={(e) => handleLeadDataChange('closedSales.totalValue', parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateLeadData({ closedSales: { ...leadData.closedSales, totalValue: parseInt(e.target.value) || 0 } })}
                     />
                   </div>
                 </div>
@@ -275,7 +336,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Input
                     type="date"
                     value={leadData.closedSales.lastClosedDate}
-                    onChange={(e) => handleLeadDataChange('closedSales.lastClosedDate', e.target.value)}
+                    onChange={(e) => updateLeadData({ closedSales: { ...leadData.closedSales, lastClosedDate: e.target.value } })}
                   />
                 </div>
               </div>
@@ -294,7 +355,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Lead Status</Label>
                   <Select
                     value={leadData.leadStatus}
-                    onValueChange={(value) => handleLeadDataChange('leadStatus', value as Lead['leadStatus'])}
+                    onValueChange={(value) => updateLeadData({ leadStatus: value as Lead['leadStatus'] })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select lead status" />
@@ -312,7 +373,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Lead Response</Label>
                   <Select
                     value={leadData.leadResponse}
-                    onValueChange={(value) => handleLeadDataChange('leadResponse', value as Lead['leadResponse'])}
+                    onValueChange={(value) => updateLeadData({ leadResponse: value as Lead['leadResponse'] })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select lead response" />
@@ -333,7 +394,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Client Type</Label>
                   <Select
                     value={leadData.clientType}
-                    onValueChange={(value) => handleLeadDataChange('clientType', value as Lead['clientType'])}
+                    onValueChange={(value) => updateLeadData({ clientType: value as Lead['clientType'] })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select client type" />
@@ -351,7 +412,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Label>Lead Type</Label>
                   <Select
                     value={leadData.leadType}
-                    onValueChange={(value) => handleLeadDataChange('leadType', value as Lead['leadType'])}
+                    onValueChange={(value) => updateLeadData({ leadType: value as Lead['leadType'] })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select lead type" />
@@ -381,7 +442,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Input
                   placeholder="Add location and press Enter"
                   value={leadData.propertyPreferences.locations.join(', ')}
-                  onChange={(e) => handleLeadDataChange('propertyPreferences.locations', e.target.value.split(',').map(loc => loc.trim()))}
+                  onChange={(e) => updateLeadData({ propertyPreferences: { ...leadData.propertyPreferences, locations: e.target.value.split(',').map(loc => loc.trim()) } })}
                 />
               </div>
 
@@ -390,7 +451,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                 <Input
                   placeholder="Add feature and press Enter"
                   value={leadData.propertyPreferences.features.join(', ')}
-                  onChange={(e) => handleLeadDataChange('propertyPreferences.features', e.target.value.split(',').map(feature => feature.trim()))}
+                  onChange={(e) => updateLeadData({ propertyPreferences: { ...leadData.propertyPreferences, features: e.target.value.split(',').map(feature => feature.trim()) } })}
                 />
               </div>
 
@@ -400,7 +461,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Input
                     type="number"
                     value={leadData.propertyPreferences.budget.min}
-                    onChange={(e) => handleLeadDataChange('propertyPreferences.budget.min', parseInt(e.target.value) || 0)}
+                    onChange={(e) => updateLeadData({ propertyPreferences: { ...leadData.propertyPreferences, budget: { ...leadData.propertyPreferences.budget, min: parseInt(e.target.value) || 0 } } })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -408,7 +469,7 @@ export default function UserLeadPage({ params }: { params: { leadId: string } })
                   <Input
                     type="number"
                     value={leadData.propertyPreferences.budget.max}
-                    onChange={(e) => handleLeadDataChange('propertyPreferences.budget.max', parseInt(e.target.value) || 0)}
+                    onChange={(e) => updateLeadData({ propertyPreferences: { ...leadData.propertyPreferences, budget: { ...leadData.propertyPreferences.budget, max: parseInt(e.target.value) || 0 } } })}
                   />
                 </div>
               </div>
